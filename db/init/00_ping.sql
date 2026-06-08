@@ -1,0 +1,4 @@
+CREATE OR REPLACE FUNCTION fn_ping()
+RETURNS text
+LANGUAGE sql
+AS $$ SELECT 'pong'; $$;

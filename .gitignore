@@ -1,0 +1,48 @@
+## .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.rsuser
+*.DotSettings.user
+
+## NuGet
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+## Publish output
+**/publish/
+
+## Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Ww][Ii][Nn]32/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+## Rider
+.idea/
+*.sln.iml
+
+## VS Code
+.vscode/
+
+## Logs
+*.log
+
+## Secrets / env overrides
+appsettings.*.json
+!appsettings.Development.json
+.env
+.env.*
+secrets.json
+
+## OS
+.DS_Store
+Thumbs.db
