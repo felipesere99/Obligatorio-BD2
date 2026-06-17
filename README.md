@@ -41,12 +41,43 @@ Debe imprimir:
 db: pong
 ```
 
+El cliente ahora es interactivo: pide un documento para iniciar sesión y
+muestra un menú según el rol.
+
 ## Verificar /health directamente
 
 ```bash
 curl http://localhost:5050/health
 # {"db":"pong"}
 ```
+
+## Login y datos de prueba
+
+El esquema y el seed (`db/init/`) se cargan en la **primera** inicialización del
+volumen. Si cambiás los scripts de `db/init`, recargá con:
+
+```bash
+docker compose down -v && docker compose up -d
+```
+
+Documentos de prueba (login por documento, sin password):
+
+| Documento | Rol               | Nombre |
+|-----------|-------------------|--------|
+| `ADM-1`   | administrador     | Admin  |
+| `FUN-1`   | funcionario       | Fabián |
+| `UG-1`    | usuario_general   | Ana (tiene 2 entradas) |
+| `UG-2`    | usuario_general   | Beto   |
+| `UG-3`    | usuario_general   | Caro   |
+
+```bash
+curl -X POST http://localhost:5050/login \
+  -H 'Content-Type: application/json' -d '{"documento":"UG-1"}'
+# {"documento":"UG-1","rol":"usuario_general","nombre":"Ana"}
+```
+
+Las peticiones autenticadas reenvían la sesión en los headers
+`X-Documento` y `X-Rol` (lo hace el `ApiClient` automáticamente).
 
 ## Variables de entorno
 

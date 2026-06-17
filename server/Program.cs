@@ -1,30 +1,37 @@
 using Npgsql;
+using Server.Api.Auth;
+using Server.Api.Data;
+using Server.Api.Infrastructure;
 using Shared;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var connString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
+    ?? builder.Configuration.GetConnectionString("Default")
+    ?? throw new InvalidOperationException("No connection string configured.");
+
+builder.Services.AddSingleton(NpgsqlDataSource.Create(connString));
+builder.Services.AddSingleton<Db>();
+
 var app = builder.Build();
 
-app.MapGet("/health", async (IConfiguration config) =>
-{
-    var connString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
-        ?? config.GetConnectionString("Default")
-        ?? throw new InvalidOperationException("No connection string configured.");
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
-    try
-    {
-        await using var conn = new NpgsqlConnection(connString);
-        await conn.OpenAsync();
-        await using var cmd = new NpgsqlCommand("SELECT fn_ping()", conn);
-        var result = (string)(await cmd.ExecuteScalarAsync())!;
-        return Results.Ok(new PingResult(result));
-    }
-    catch (Exception ex)
-    {
-        return Results.Problem(
-            detail: ex.Message,
-            statusCode: StatusCodes.Status503ServiceUnavailable,
-            title: "Database unavailable");
-    }
+// ---------- Health ----------
+app.MapGet("/health", async (Db db) =>
+{
+    var pong = await db.ScalarAsync<string>("SELECT fn_ping()");
+    return Results.Ok(new PingResult(pong ?? "?"));
 });
+
+// ---------- Cimientos: autenticación ----------
+app.MapAuth();
+
+// ============================================================
+//  Puntos de extensión — cada persona agrega su grupo de endpoints.
+//  Crear el archivo en server/Features/<Dominio>/<Dominio>Endpoints.cs
+//  con un método  public static void Map<Dominio>(this IEndpointRouteBuilder app)
+//  y registrarlo acá.
+// ============================================================
 
 app.Run();
