@@ -54,10 +54,23 @@ while (true)
 
 static async Task<bool> TryLogin(ApiClient api)
 {
-    Console.Write("\nDocumento (vacío para salir): ");
+    Console.Write("\nDocumento ('r' para registrarme, vacío para salir): ");
     var doc = Console.ReadLine();
     if (string.IsNullOrWhiteSpace(doc))
         return false;
+
+    if (doc.Trim().Equals("r", StringComparison.OrdinalIgnoreCase))
+    {
+        try
+        {
+            await Menu.Registrarme(api);
+        }
+        catch (ApiException ex)
+        {
+            Console.WriteLine($"⚠  {ex.Message}");
+        }
+        return true;
+    }
 
     try
     {
