@@ -26,6 +26,8 @@ public static class Menu
             new("Crear evento", CrearEvento),
             new("Habilitar sector en evento", HabilitarSector),
             new("Listar eventos", ListarEventos),
+            new("Setear comisión", SetComision),
+            new("Ver comisión vigente", VerComisionVigente),
         },
         Roles.Funcionario => new()
         {
@@ -176,6 +178,21 @@ public static class Menu
             Console.WriteLine($"   {e.FechaInicio:yyyy-MM-dd HH:mm} → {e.FechaFin:yyyy-MM-dd HH:mm}");
             Console.WriteLine($"   Sectores habilitados: {(e.SectoresHabilitados.Count == 0 ? "(ninguno)" : string.Join(", ", e.SectoresHabilitados))}");
         }
+    }
+
+    private static async Task SetComision(ApiClient api)
+    {
+        Console.WriteLine("\n-- Setear comisión --");
+        var porcentaje = PromptDecimal("Porcentaje (ej. 7.00)");
+
+        var c = await api.PostAsync<ComisionResponse>("/comisiones", new SetComisionRequest(porcentaje));
+        Console.WriteLine($"Comisión vigente ahora: {c.Porcentaje}% (id {c.IdComision}, desde {c.VigenteDesde:yyyy-MM-dd HH:mm}).");
+    }
+
+    private static async Task VerComisionVigente(ApiClient api)
+    {
+        var c = await api.GetAsync<ComisionResponse>("/comisiones/vigente");
+        Console.WriteLine($"Comisión vigente: {c.Porcentaje}% (id {c.IdComision}, desde {c.VigenteDesde:yyyy-MM-dd HH:mm}).");
     }
 
     /// <summary>Registro de un usuario general (no requiere sesión).</summary>

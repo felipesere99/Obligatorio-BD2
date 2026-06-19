@@ -212,3 +212,48 @@ BEGIN
     RETURN btrim(p_nombre_sector);
 END;
 $$;
+
+-- ------------------------------------------------------------
+--  A5 — Comisión (vigencia temporal)
+-- ------------------------------------------------------------
+
+-- fn_comision_vigente — devuelve la comisión vigente (vigente_hasta IS NULL).
+-- Las columnas de salida llevan prefijo o_ para no chocar con los nombres
+-- de columna de la tabla dentro del cuerpo.
+CREATE OR REPLACE FUNCTION fn_comision_vigente()
+RETURNS TABLE(o_id_comision INT, o_porcentaje NUMERIC, o_vigente_desde TIMESTAMPTZ)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    RETURN QUERY
+        SELECT c.id_comision, c.porcentaje, c.vigente_desde
+        FROM comision c
+        WHERE c.vigente_hasta IS NULL;
+END;
+$$;
+
+-- fn_set_comision — cierra la comisión vigente (vigente_hasta = now()) y abre
+-- una nueva. Devuelve la comisión recién creada (ya vigente).
+CREATE OR REPLACE FUNCTION fn_set_comision(p_porcentaje NUMERIC)
+RETURNS TABLE(o_id_comision INT, o_porcentaje NUMERIC, o_vigente_desde TIMESTAMPTZ)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_id INT;
+BEGIN
+    IF p_porcentaje IS NULL OR p_porcentaje < 0 THEN
+        RAISE EXCEPTION 'El porcentaje debe ser mayor o igual a cero.';
+    END IF;
+
+    UPDATE comision SET vigente_hasta = now() WHERE vigente_hasta IS NULL;
+
+    INSERT INTO comision(porcentaje, vigente_desde)
+    VALUES (p_porcentaje, now())
+    RETURNING id_comision INTO v_id;
+
+    RETURN QUERY
+        SELECT c.id_comision, c.porcentaje, c.vigente_desde
+        FROM comision c
+        WHERE c.id_comision = v_id;
+END;
+$$;

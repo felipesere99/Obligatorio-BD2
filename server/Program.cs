@@ -1,6 +1,7 @@
 using Npgsql;
 using Server.Api.Auth;
 using Server.Api.Data;
+using Server.Api.Features.Comisiones;
 using Server.Api.Features.Equipos;
 using Server.Api.Features.Estadios;
 using Server.Api.Features.Eventos;
@@ -43,5 +44,6 @@ app.MapUsuarios();
 app.MapEquipos();
 app.MapEstadios();
 app.MapEventos();
+app.MapComisiones();
 
 app.Run();
