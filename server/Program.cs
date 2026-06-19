@@ -3,6 +3,7 @@ using Server.Api.Auth;
 using Server.Api.Data;
 using Server.Api.Features.Equipos;
 using Server.Api.Features.Estadios;
+using Server.Api.Features.Eventos;
 using Server.Api.Features.Usuarios;
 using Server.Api.Infrastructure;
 using Shared;
@@ -41,5 +42,6 @@ app.MapAuth();
 app.MapUsuarios();
 app.MapEquipos();
 app.MapEstadios();
+app.MapEventos();
 
 app.Run();

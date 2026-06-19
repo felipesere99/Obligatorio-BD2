@@ -23,8 +23,9 @@ public static class Menu
             new("Registrar estadio", RegistrarEstadio),
             new("Agregar sector a un estadio", RegistrarSector),
             new("Listar estadios", ListarEstadios),
-            // Persona A: new("Crear evento", Acciones.CrearEvento),
-            //            new("Habilitar sectores", ...),
+            new("Crear evento", CrearEvento),
+            new("Habilitar sector en evento", HabilitarSector),
+            new("Listar eventos", ListarEventos),
         },
         Roles.Funcionario => new()
         {
@@ -131,6 +132,52 @@ public static class Menu
         }
     }
 
+    private static async Task CrearEvento(ApiClient api)
+    {
+        Console.WriteLine("\n-- Alta de evento --");
+        var nombre = Prompt("Nombre");
+        var inicio = PromptDate("Fecha/hora inicio (ej. 2026-06-20 18:00)");
+        var fin = PromptDate("Fecha/hora fin    (ej. 2026-06-20 20:00)");
+        var local = Prompt("País local (código, ej. URU)");
+        var visitante = Prompt("País visitante (código, ej. ARG)");
+        var estadio = Prompt("Estadio");
+
+        var creado = await api.PostAsync<EventoCreadoResponse>(
+            "/eventos",
+            new CrearEventoRequest(nombre, inicio, fin, local, visitante, estadio));
+        Console.WriteLine($"Evento creado con id {creado.IdEvento}.");
+    }
+
+    private static async Task HabilitarSector(ApiClient api)
+    {
+        Console.WriteLine("\n-- Habilitar sector en evento --");
+        var idEvento = PromptInt("Id del evento");
+        var estadio = Prompt("Estadio");
+        var sector = Prompt("Sector");
+
+        await api.PostAsync<object>(
+            $"/eventos/{idEvento}/sectores",
+            new HabilitarSectorRequest(estadio, sector));
+        Console.WriteLine($"Sector {sector} habilitado para el evento {idEvento}.");
+    }
+
+    private static async Task ListarEventos(ApiClient api)
+    {
+        var eventos = await api.GetAsync<List<EventoResponse>>("/eventos");
+        if (eventos.Count == 0)
+        {
+            Console.WriteLine("No hay eventos.");
+            return;
+        }
+
+        foreach (var e in eventos)
+        {
+            Console.WriteLine($"\n#{e.IdEvento} {e.Nombre} — {e.PaisLocal} vs {e.PaisVisitante} @ {e.NombreEstadio}");
+            Console.WriteLine($"   {e.FechaInicio:yyyy-MM-dd HH:mm} → {e.FechaFin:yyyy-MM-dd HH:mm}");
+            Console.WriteLine($"   Sectores habilitados: {(e.SectoresHabilitados.Count == 0 ? "(ninguno)" : string.Join(", ", e.SectoresHabilitados))}");
+        }
+    }
+
     /// <summary>Registro de un usuario general (no requiere sesión).</summary>
     public static async Task Registrarme(ApiClient api)
     {
@@ -188,6 +235,16 @@ public static class Menu
             if (decimal.TryParse(Prompt(label), out var value))
                 return value;
             Console.WriteLine("Ingresá un número (ej. 150.00).");
+        }
+    }
+
+    private static DateTimeOffset PromptDate(string label)
+    {
+        while (true)
+        {
+            if (DateTimeOffset.TryParse(Prompt(label), out var value))
+                return value;
+            Console.WriteLine("Fecha inválida. Usá el formato 2026-06-20 18:00.");
         }
     }
 }

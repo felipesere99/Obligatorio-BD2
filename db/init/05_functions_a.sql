@@ -138,3 +138,77 @@ BEGIN
     RETURN btrim(p_nombre);
 END;
 $$;
+
+-- ------------------------------------------------------------
+--  A4 — Eventos + habilitar sectores
+-- ------------------------------------------------------------
+
+-- fn_crear_evento — alta de un evento. Devuelve el id generado.
+-- La superposición en el mismo estadio la frena el trigger
+-- tr_evento_sin_superposicion (-> 400); equipos/estadio inexistentes
+-- los frena la FK (-> 400).
+CREATE OR REPLACE FUNCTION fn_crear_evento(
+    p_nombre         VARCHAR,
+    p_fecha_inicio   TIMESTAMPTZ,
+    p_fecha_fin      TIMESTAMPTZ,
+    p_pais_local     VARCHAR,
+    p_pais_visitante VARCHAR,
+    p_nombre_estadio VARCHAR
+)
+RETURNS INT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_id INT;
+BEGIN
+    IF p_nombre IS NULL OR btrim(p_nombre) = '' THEN
+        RAISE EXCEPTION 'El nombre del evento es obligatorio.';
+    END IF;
+    IF p_fecha_inicio IS NULL OR p_fecha_fin IS NULL THEN
+        RAISE EXCEPTION 'Las fechas de inicio y fin son obligatorias.';
+    END IF;
+    IF p_fecha_fin <= p_fecha_inicio THEN
+        RAISE EXCEPTION 'La fecha de fin debe ser posterior a la de inicio.';
+    END IF;
+    IF p_nombre_estadio IS NULL OR btrim(p_nombre_estadio) = '' THEN
+        RAISE EXCEPTION 'El estadio es obligatorio.';
+    END IF;
+
+    INSERT INTO evento(nombre, fecha_inicio, fecha_fin, pais_local, pais_visitante, nombre_estadio)
+    VALUES (btrim(p_nombre), p_fecha_inicio, p_fecha_fin,
+            p_pais_local, p_pais_visitante, btrim(p_nombre_estadio))
+    RETURNING id_evento INTO v_id;
+
+    RETURN v_id;
+END;
+$$;
+
+-- fn_habilitar_sector — habilita un sector para un evento. Devuelve el sector.
+-- Que el sector pertenezca al estadio del evento lo frena el trigger
+-- tr_evento_sector_mismo_estadio (-> 400); el sector inexistente, la FK (-> 400);
+-- el duplicado, la PK (-> 409).
+CREATE OR REPLACE FUNCTION fn_habilitar_sector(
+    p_id_evento      INT,
+    p_nombre_estadio VARCHAR,
+    p_nombre_sector  VARCHAR
+)
+RETURNS VARCHAR
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_id_evento IS NULL THEN
+        RAISE EXCEPTION 'El evento es obligatorio.';
+    END IF;
+    IF p_nombre_estadio IS NULL OR btrim(p_nombre_estadio) = '' THEN
+        RAISE EXCEPTION 'El estadio es obligatorio.';
+    END IF;
+    IF p_nombre_sector IS NULL OR btrim(p_nombre_sector) = '' THEN
+        RAISE EXCEPTION 'El sector es obligatorio.';
+    END IF;
+
+    INSERT INTO evento_sector(id_evento, nombre_estadio, nombre_sector)
+    VALUES (p_id_evento, btrim(p_nombre_estadio), btrim(p_nombre_sector));
+
+    RETURN btrim(p_nombre_sector);
+END;
+$$;
