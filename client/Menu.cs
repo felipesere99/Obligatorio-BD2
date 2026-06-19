@@ -38,8 +38,8 @@ public static class Menu
         Roles.UsuarioGeneral => new()
         {
             new("Verificar conexión (health)", Health),
-            // Persona A: new("Comprar entradas", ...),
-            //            new("Mis compras", ...),
+            new("Comprar entradas", ComprarEntradas),
+            new("Mis compras", MisCompras),
             // Persona B: new("Transferir entrada", ...),
             //            new("Mis transferencias", ...),
             //            new("Mis entradas", ...),
@@ -193,6 +193,66 @@ public static class Menu
     {
         var c = await api.GetAsync<ComisionResponse>("/comisiones/vigente");
         Console.WriteLine($"Comisión vigente: {c.Porcentaje}% (id {c.IdComision}, desde {c.VigenteDesde:yyyy-MM-dd HH:mm}).");
+    }
+
+    private static async Task ComprarEntradas(ApiClient api)
+    {
+        Console.WriteLine("\n-- Comprar entradas (hasta 5) --");
+        Console.WriteLine("Dejá vacío el id de evento para terminar de cargar items.");
+
+        var items = new List<CompraItem>();
+        while (items.Count < 5)
+        {
+            Console.WriteLine($"\nItem #{items.Count + 1}:");
+            var idRaw = PromptOptional("  Id de evento (vacío = terminar)");
+            if (idRaw is null)
+                break;
+            if (!int.TryParse(idRaw, out var idEvento))
+            {
+                Console.WriteLine("  Id inválido, reintentá.");
+                continue;
+            }
+
+            var estadio = Prompt("  Estadio");
+            var sector = Prompt("  Sector");
+            var fila = PromptOptional("  Fila (opcional)");
+            var asiento = PromptOptional("  Asiento (opcional)");
+            items.Add(new CompraItem(idEvento, estadio, sector, fila, asiento));
+        }
+
+        if (items.Count == 0)
+        {
+            Console.WriteLine("Compra cancelada (sin items).");
+            return;
+        }
+
+        var venta = await api.PostAsync<VentaCreadaResponse>("/ventas", new CrearVentaRequest(items));
+        Console.WriteLine($"Compra OK. Venta #{venta.NroVenta} — total ${venta.MontoTotal} ({items.Count} entrada(s)).");
+    }
+
+    private static async Task MisCompras(ApiClient api)
+    {
+        var doc = api.Session!.Documento;
+        var compras = await api.GetAsync<List<CompraResponse>>($"/usuarios/{doc}/compras");
+        if (compras.Count == 0)
+        {
+            Console.WriteLine("No tenés compras.");
+            return;
+        }
+
+        Console.WriteLine($"\n{"Venta",-7} {"Total",-10} {"Estado",-12} {"Fecha",-18} Entradas");
+        foreach (var c in compras)
+            Console.WriteLine($"#{c.NroVenta,-6} ${c.MontoTotal,-9} {c.Estado,-12} {c.Fecha:yyyy-MM-dd HH:mm,-18} {c.CantidadEntradas}");
+
+        var sel = PromptOptional("\nVer entradas de qué venta (vacío para volver)");
+        if (sel is null || !int.TryParse(sel, out var nro))
+            return;
+
+        var entradas = await api.GetAsync<List<EntradaResponse>>($"/ventas/{nro}/entradas");
+        Console.WriteLine($"\nEntradas de la venta #{nro}:");
+        foreach (var e in entradas)
+            Console.WriteLine($"  #{e.NroEntrada} evento {e.IdEvento} — {e.NombreEstadio}/{e.NombreSector}" +
+                $"{(e.Fila is null && e.Asiento is null ? "" : $" (fila {e.Fila ?? "-"}, asiento {e.Asiento ?? "-"})")}");
     }
 
     /// <summary>Registro de un usuario general (no requiere sesión).</summary>

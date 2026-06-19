@@ -257,3 +257,82 @@ BEGIN
         WHERE c.id_comision = v_id;
 END;
 $$;
+
+-- ------------------------------------------------------------
+--  A6 — Compra (capstone)
+-- ------------------------------------------------------------
+
+-- fn_crear_venta — crea una venta a partir de un array JSON de items
+-- [{ id_evento, estadio, sector, fila, asiento }, ...].
+--   * monto = Σ costo_entrada × (1 + %comisión_vigente / 100)
+--   * inserta la venta (con la comisión vigente) y una entrada por item.
+--   * los triggers de 02 refuerzan: sector habilitado, capacidad y ≤ 5/venta.
+-- Devuelve nro_venta y monto_total. Es atómica: si una entrada falla, se
+-- revierte toda la venta.
+CREATE OR REPLACE FUNCTION fn_crear_venta(
+    p_comprador VARCHAR,
+    p_items     JSONB
+)
+RETURNS TABLE(o_nro_venta INT, o_monto_total NUMERIC)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_id_comision INT;
+    v_pct         NUMERIC;
+    v_cant        INT;
+    v_monto       NUMERIC;
+    v_nro         INT;
+    v_item        JSONB;
+BEGIN
+    IF p_items IS NULL OR jsonb_typeof(p_items) <> 'array' THEN
+        RAISE EXCEPTION 'Los items de la compra son obligatorios.';
+    END IF;
+
+    v_cant := jsonb_array_length(p_items);
+    IF v_cant = 0 THEN
+        RAISE EXCEPTION 'La compra no tiene entradas.';
+    END IF;
+    IF v_cant > 5 THEN
+        RAISE EXCEPTION 'Una venta admite como máximo 5 entradas (pediste %).', v_cant;
+    END IF;
+
+    -- Comisión vigente.
+    SELECT id_comision, porcentaje INTO v_id_comision, v_pct
+    FROM comision WHERE vigente_hasta IS NULL;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'No hay una comisión vigente.';
+    END IF;
+
+    -- Monto: suma de costos de los sectores pedidos, más la comisión.
+    SELECT coalesce(sum(s.costo_entrada), 0) * (1 + v_pct / 100)
+    INTO v_monto
+    FROM jsonb_array_elements(p_items) AS it
+    JOIN sector s
+      ON s.nombre_estadio = it->>'estadio'
+     AND s.nombre         = it->>'sector';
+
+    -- Cabecera de la venta (con la comisión vigente).
+    INSERT INTO venta(monto_total, estado, doc_comprador, id_comision)
+    VALUES (round(v_monto, 2), 'pendiente', p_comprador, v_id_comision)
+    RETURNING nro_venta INTO v_nro;
+
+    -- Una entrada por item; los triggers validan cada inserción.
+    FOR v_item IN SELECT value FROM jsonb_array_elements(p_items) LOOP
+        INSERT INTO entrada(
+            nro_venta, id_evento, nombre_estadio, nombre_sector,
+            fila, asiento, doc_propietario
+        ) VALUES (
+            v_nro,
+            (v_item->>'id_evento')::int,
+            v_item->>'estadio',
+            v_item->>'sector',
+            v_item->>'fila',
+            v_item->>'asiento',
+            p_comprador
+        );
+    END LOOP;
+
+    RETURN QUERY
+        SELECT v.nro_venta, v.monto_total FROM venta v WHERE v.nro_venta = v_nro;
+END;
+$$;

@@ -6,6 +6,7 @@ using Server.Api.Features.Equipos;
 using Server.Api.Features.Estadios;
 using Server.Api.Features.Eventos;
 using Server.Api.Features.Usuarios;
+using Server.Api.Features.Ventas;
 using Server.Api.Infrastructure;
 using Shared;
 
@@ -45,5 +46,6 @@ app.MapEquipos();
 app.MapEstadios();
 app.MapEventos();
 app.MapComisiones();
+app.MapVentas();
 
 app.Run();
