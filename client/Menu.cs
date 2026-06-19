@@ -18,8 +18,9 @@ public static class Menu
         {
             new("Verificar conexión (health)", Health),
             new("Listar usuarios generales", ListarUsuarios),
-            // Persona A: new("Registrar equipo", Acciones.RegistrarEquipo),
-            //            new("Crear evento", Acciones.CrearEvento),
+            new("Registrar equipo", RegistrarEquipo),
+            new("Listar equipos", ListarEquipos),
+            // Persona A: new("Crear evento", Acciones.CrearEvento),
             //            new("Habilitar sectores", ...),
         },
         Roles.Funcionario => new()
@@ -58,6 +59,30 @@ public static class Menu
         Console.WriteLine($"{"Documento",-12} {"Nombre",-20} {"Correo",-28} Verificado");
         foreach (var u in usuarios)
             Console.WriteLine($"{u.Documento,-12} {$"{u.Nombre} {u.Apellido}",-20} {u.Correo,-28} {(u.EstadoVerificacion ? "sí" : "no")}");
+    }
+
+    private static async Task RegistrarEquipo(ApiClient api)
+    {
+        Console.WriteLine("\n-- Alta de equipo --");
+        var pais = Prompt("País (código, ej. URU)");
+        var nombre = Prompt("Nombre");
+
+        var creado = await api.PostAsync<EquipoResponse>("/equipos", new RegistrarEquipoRequest(pais, nombre));
+        Console.WriteLine($"Equipo {creado.Nombre} ({creado.Pais}) registrado.");
+    }
+
+    private static async Task ListarEquipos(ApiClient api)
+    {
+        var equipos = await api.GetAsync<List<EquipoResponse>>("/equipos");
+        if (equipos.Count == 0)
+        {
+            Console.WriteLine("No hay equipos.");
+            return;
+        }
+
+        Console.WriteLine($"{"País",-8} Nombre");
+        foreach (var e in equipos)
+            Console.WriteLine($"{e.Pais,-8} {e.Nombre}");
     }
 
     /// <summary>Registro de un usuario general (no requiere sesión).</summary>

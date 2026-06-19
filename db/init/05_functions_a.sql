@@ -53,3 +53,31 @@ BEGIN
     RETURN btrim(p_documento);
 END;
 $$;
+
+-- ------------------------------------------------------------
+--  A2 — Equipos
+-- ------------------------------------------------------------
+
+-- fn_registrar_equipo — alta de un equipo (PK = país). Devuelve el país.
+-- El país duplicado lo frena la PK y el middleware lo traduce a 409.
+CREATE OR REPLACE FUNCTION fn_registrar_equipo(
+    p_pais   VARCHAR,
+    p_nombre VARCHAR
+)
+RETURNS VARCHAR
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_pais IS NULL OR btrim(p_pais) = '' THEN
+        RAISE EXCEPTION 'El país es obligatorio.';
+    END IF;
+    IF p_nombre IS NULL OR btrim(p_nombre) = '' THEN
+        RAISE EXCEPTION 'El nombre es obligatorio.';
+    END IF;
+
+    INSERT INTO equipo(pais, nombre)
+    VALUES (btrim(p_pais), btrim(p_nombre));
+
+    RETURN btrim(p_pais);
+END;
+$$;
