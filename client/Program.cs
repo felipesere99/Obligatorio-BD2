@@ -41,6 +41,10 @@ while (true)
         {
             Console.WriteLine($"⚠  {ex.Message}");
         }
+        catch (HttpRequestException)
+        {
+            Console.WriteLine("⚠  No se pudo conectar al server. ¿Está corriendo en http://localhost:5050?");
+        }
         catch (Exception ex)
         {
             Console.WriteLine($"Error inesperado: {ex.Message}");
@@ -69,6 +73,10 @@ static async Task<bool> TryLogin(ApiClient api)
         {
             Console.WriteLine($"⚠  {ex.Message}");
         }
+        catch (HttpRequestException)
+        {
+            Console.WriteLine("⚠  No se pudo conectar al server. ¿Está corriendo en http://localhost:5050?");
+        }
         return true;
     }
 
@@ -80,6 +88,10 @@ static async Task<bool> TryLogin(ApiClient api)
     catch (ApiException ex)
     {
         Console.WriteLine($"⚠  {ex.Message}");
+    }
+    catch (HttpRequestException)
+    {
+        Console.WriteLine("⚠  No se pudo conectar al server. ¿Está corriendo en http://localhost:5050?");
     }
 
     return true;

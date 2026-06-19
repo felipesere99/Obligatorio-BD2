@@ -20,6 +20,9 @@ public static class Menu
             new("Listar usuarios generales", ListarUsuarios),
             new("Registrar equipo", RegistrarEquipo),
             new("Listar equipos", ListarEquipos),
+            new("Registrar estadio", RegistrarEstadio),
+            new("Agregar sector a un estadio", RegistrarSector),
+            new("Listar estadios", ListarEstadios),
             // Persona A: new("Crear evento", Acciones.CrearEvento),
             //            new("Habilitar sectores", ...),
         },
@@ -85,6 +88,49 @@ public static class Menu
             Console.WriteLine($"{e.Pais,-8} {e.Nombre}");
     }
 
+    private static async Task RegistrarEstadio(ApiClient api)
+    {
+        Console.WriteLine("\n-- Alta de estadio --");
+        var nombre = Prompt("Nombre");
+        var direccion = PromptOptional("Dirección (opcional)");
+
+        await api.PostAsync<object>("/estadios", new RegistrarEstadioRequest(nombre, direccion));
+        Console.WriteLine($"Estadio {nombre} registrado.");
+    }
+
+    private static async Task RegistrarSector(ApiClient api)
+    {
+        Console.WriteLine("\n-- Alta de sector --");
+        var estadio = Prompt("Estadio");
+        var nombre = Prompt("Nombre del sector");
+        var capacidad = PromptInt("Capacidad");
+        var costo = PromptDecimal("Costo de entrada");
+
+        var creado = await api.PostAsync<SectorResponse>(
+            $"/estadios/{Uri.EscapeDataString(estadio)}/sectores",
+            new RegistrarSectorRequest(nombre, capacidad, costo));
+        Console.WriteLine($"Sector {creado.Nombre} agregado a {estadio} (cap. {creado.Capacidad}, ${creado.CostoEntrada}).");
+    }
+
+    private static async Task ListarEstadios(ApiClient api)
+    {
+        var estadios = await api.GetAsync<List<EstadioResponse>>("/estadios");
+        if (estadios.Count == 0)
+        {
+            Console.WriteLine("No hay estadios.");
+            return;
+        }
+
+        foreach (var e in estadios)
+        {
+            Console.WriteLine($"\n{e.Nombre}{(e.Direccion is null ? "" : $" — {e.Direccion}")}");
+            if (e.Sectores.Count == 0)
+                Console.WriteLine("  (sin sectores)");
+            foreach (var s in e.Sectores)
+                Console.WriteLine($"  · {s.Nombre,-10} cap. {s.Capacidad,-5} ${s.CostoEntrada}");
+        }
+    }
+
     /// <summary>Registro de un usuario general (no requiere sesión).</summary>
     public static async Task Registrarme(ApiClient api)
     {
@@ -123,5 +169,25 @@ public static class Menu
         Console.Write($"{label}: ");
         var value = Console.ReadLine();
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static int PromptInt(string label)
+    {
+        while (true)
+        {
+            if (int.TryParse(Prompt(label), out var value))
+                return value;
+            Console.WriteLine("Ingresá un número entero.");
+        }
+    }
+
+    private static decimal PromptDecimal(string label)
+    {
+        while (true)
+        {
+            if (decimal.TryParse(Prompt(label), out var value))
+                return value;
+            Console.WriteLine("Ingresá un número (ej. 150.00).");
+        }
     }
 }

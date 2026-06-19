@@ -81,3 +81,60 @@ BEGIN
     RETURN btrim(p_pais);
 END;
 $$;
+
+-- ------------------------------------------------------------
+--  A3 — Estadios + Sectores
+-- ------------------------------------------------------------
+
+-- fn_registrar_estadio — alta de un estadio (PK = nombre). Devuelve el nombre.
+CREATE OR REPLACE FUNCTION fn_registrar_estadio(
+    p_nombre    VARCHAR,
+    p_direccion VARCHAR DEFAULT NULL
+)
+RETURNS VARCHAR
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_nombre IS NULL OR btrim(p_nombre) = '' THEN
+        RAISE EXCEPTION 'El nombre del estadio es obligatorio.';
+    END IF;
+
+    INSERT INTO estadio(nombre, direccion)
+    VALUES (btrim(p_nombre), p_direccion);
+
+    RETURN btrim(p_nombre);
+END;
+$$;
+
+-- fn_registrar_sector — alta de un sector de un estadio (entidad débil).
+-- Devuelve el nombre del sector. Si el estadio no existe, la FK lo frena (400);
+-- el nombre repetido en el mismo estadio lo frena la PK (409).
+CREATE OR REPLACE FUNCTION fn_registrar_sector(
+    p_nombre_estadio VARCHAR,
+    p_nombre         VARCHAR,
+    p_capacidad      INT,
+    p_costo_entrada  NUMERIC
+)
+RETURNS VARCHAR
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_nombre_estadio IS NULL OR btrim(p_nombre_estadio) = '' THEN
+        RAISE EXCEPTION 'El estadio es obligatorio.';
+    END IF;
+    IF p_nombre IS NULL OR btrim(p_nombre) = '' THEN
+        RAISE EXCEPTION 'El nombre del sector es obligatorio.';
+    END IF;
+    IF p_capacidad IS NULL OR p_capacidad <= 0 THEN
+        RAISE EXCEPTION 'La capacidad debe ser mayor a cero.';
+    END IF;
+    IF p_costo_entrada IS NULL OR p_costo_entrada < 0 THEN
+        RAISE EXCEPTION 'El costo de entrada no puede ser negativo.';
+    END IF;
+
+    INSERT INTO sector(nombre_estadio, nombre, capacidad, costo_entrada)
+    VALUES (btrim(p_nombre_estadio), btrim(p_nombre), p_capacidad, p_costo_entrada);
+
+    RETURN btrim(p_nombre);
+END;
+$$;

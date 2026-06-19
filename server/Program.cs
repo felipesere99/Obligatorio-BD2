@@ -2,6 +2,7 @@ using Npgsql;
 using Server.Api.Auth;
 using Server.Api.Data;
 using Server.Api.Features.Equipos;
+using Server.Api.Features.Estadios;
 using Server.Api.Features.Usuarios;
 using Server.Api.Infrastructure;
 using Shared;
@@ -39,5 +40,6 @@ app.MapAuth();
 // ---------- Persona A ----------
 app.MapUsuarios();
 app.MapEquipos();
+app.MapEstadios();
 
 app.Run();
