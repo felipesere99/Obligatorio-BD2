@@ -19,7 +19,25 @@ var connString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
 builder.Services.AddSingleton(new MySqlDataSource(connString));
 builder.Services.AddSingleton<Db>();
 
+// CORS para el front de React. En desarrollo Vite puede arrancar en cualquier
+// puerto de localhost (5173, 5174, …), así que aceptamos cualquiera de localhost
+// en vez de atarnos a uno fijo.
+const string FrontPolicy = "front";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(FrontPolicy, policy =>
+        policy.SetIsOriginAllowed(origin =>
+                {
+                    var host = new Uri(origin).Host;
+                    return host is "localhost" or "127.0.0.1";
+                })
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
+
 var app = builder.Build();
+
+app.UseCors(FrontPolicy);
 
 app.UseMiddleware<ErrorHandlingMiddleware>();
 
