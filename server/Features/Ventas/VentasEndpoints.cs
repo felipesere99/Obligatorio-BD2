@@ -27,7 +27,7 @@ public static class VentasEndpoints
             }));
 
             var venta = await db.QuerySingleAsync(
-                "SELECT * FROM fn_crear_venta(@comprador, @items::jsonb)",
+                "CALL sp_crear_venta(@comprador, @items)",
                 r => new VentaCreadaResponse(r.GetInt32(0), r.GetDecimal(1)),
                 p =>
                 {
@@ -57,7 +57,7 @@ public static class VentasEndpoints
                 """,
                 r => new CompraResponse(
                     r.GetInt32(0), r.GetDecimal(1), r.GetString(2),
-                    r.GetFieldValue<DateTimeOffset>(3), (int)r.GetInt64(4)),
+                    r.GetDateTime(3), (int)r.GetInt64(4)),
                 p => p.AddWithValue("doc", doc));
 
             return Results.Ok(compras);

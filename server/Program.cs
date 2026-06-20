@@ -1,4 +1,4 @@
-using Npgsql;
+using MySqlConnector;
 using Server.Api.Auth;
 using Server.Api.Data;
 using Server.Api.Features.Comisiones;
@@ -16,7 +16,7 @@ var connString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
     ?? builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("No connection string configured.");
 
-builder.Services.AddSingleton(NpgsqlDataSource.Create(connString));
+builder.Services.AddSingleton(new MySqlDataSource(connString));
 builder.Services.AddSingleton<Db>();
 
 var app = builder.Build();

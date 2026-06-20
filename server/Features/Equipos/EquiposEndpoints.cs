@@ -15,7 +15,7 @@ public static class EquiposEndpoints
             if (error is not null) return error;
 
             var pais = await db.ScalarAsync<string>(
-                "SELECT fn_registrar_equipo(@pais, @nombre)",
+                "CALL sp_registrar_equipo(@pais, @nombre)",
                 p =>
                 {
                     p.AddWithValue("pais", req.Pais);
