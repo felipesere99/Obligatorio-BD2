@@ -41,6 +41,10 @@ while (true)
         {
             Console.WriteLine($"⚠  {ex.Message}");
         }
+        catch (HttpRequestException)
+        {
+            Console.WriteLine("⚠  No se pudo conectar al server. ¿Está corriendo en http://localhost:5050?");
+        }
         catch (Exception ex)
         {
             Console.WriteLine($"Error inesperado: {ex.Message}");
@@ -54,10 +58,27 @@ while (true)
 
 static async Task<bool> TryLogin(ApiClient api)
 {
-    Console.Write("\nDocumento (vacío para salir): ");
+    Console.Write("\nDocumento ('r' para registrarme, vacío para salir): ");
     var doc = Console.ReadLine();
     if (string.IsNullOrWhiteSpace(doc))
         return false;
+
+    if (doc.Trim().Equals("r", StringComparison.OrdinalIgnoreCase))
+    {
+        try
+        {
+            await Menu.Registrarme(api);
+        }
+        catch (ApiException ex)
+        {
+            Console.WriteLine($"⚠  {ex.Message}");
+        }
+        catch (HttpRequestException)
+        {
+            Console.WriteLine("⚠  No se pudo conectar al server. ¿Está corriendo en http://localhost:5050?");
+        }
+        return true;
+    }
 
     try
     {
@@ -67,6 +88,10 @@ static async Task<bool> TryLogin(ApiClient api)
     catch (ApiException ex)
     {
         Console.WriteLine($"⚠  {ex.Message}");
+    }
+    catch (HttpRequestException)
+    {
+        Console.WriteLine("⚠  No se pudo conectar al server. ¿Está corriendo en http://localhost:5050?");
     }
 
     return true;
