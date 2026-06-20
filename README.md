@@ -9,6 +9,8 @@ Sistema de ticketing — esqueleto inicial.
 
 ## Levantar la base de datos
 
+La base local es **MySQL 8** (vía Docker).
+
 ```bash
 docker compose up -d
 ```
@@ -51,6 +53,46 @@ curl http://localhost:5050/health
 # {"db":"pong"}
 ```
 
+## Variables locales (`.env`)
+
+Copiá la plantilla y completá tus valores (sobre todo la password de la UCU):
+
+```bash
+cp .env.example .env
+```
+
+El `.env` está en `.gitignore` (no se sube). Lo usan `docker compose` (credenciales
+de la base MySQL local) y `scripts/run-ucu.sh` (toma `UCU_DB_PASSWORD` de ahí en
+vez de pedirla por consola).
+
+## Elegir contra qué base corre el server
+
+El server lee `DB_CONNECTION_STRING`; si no está, usa la base local de
+`appsettings.Development.json`. Hay dos scripts para no tener que acordarse de
+la cadena (se elige una base por arranque, no las dos a la vez):
+
+```bash
+./scripts/run-local.sh   # base LOCAL (Docker MySQL, localhost:3306)
+./scripts/run-ucu.sh     # base UCU (Grupo 4); pide la contraseña
+```
+
+`run-ucu.sh` no guarda la contraseña en el repo: la pide por consola o la toma
+de `$UCU_DB_PASSWORD`. Acepta overrides (`UCU_DB_HOST`, `UCU_DB_PORT`,
+`UCU_DB_NAME`, `UCU_DB_USER`) con defaults para el Grupo 4.
+
+## Base compartida de la UCU (MySQL)
+
+Si preferís hacerlo a mano, apuntá el server con `DB_CONNECTION_STRING`:
+
+```bash
+export DB_CONNECTION_STRING="Server=mysql.reto-ucu.net;Port=50006;Database=XR_Grupo4;User ID=xr_g4_admin;Password=TU_PASSWORD"
+dotnet run --project server
+```
+
+> La contraseña se cambia en el primer login; no la pongas en el repo (va en el
+> `.env`, que está en `.gitignore`). Los scripts de `db/init/` se pueden aplicar
+> a esa base con DataGrip (soporta `DELIMITER`) o con el cliente `mysql`.
+
 ## Login y datos de prueba
 
 El esquema y el seed (`db/init/`) se cargan en la **primera** inicialización del
@@ -59,6 +101,9 @@ volumen. Si cambiás los scripts de `db/init`, recargá con:
 ```bash
 docker compose down -v && docker compose up -d
 ```
+
+> El volumen ahora es `mysqldata` (MySQL). Los scripts de `db/init/` corren
+> en orden alfabético en la **primera** inicialización.
 
 Documentos de prueba (login por documento, sin password):
 

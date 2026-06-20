@@ -19,8 +19,8 @@ public record HabilitarSectorRequest(string NombreEstadio, string NombreSector);
 public record EventoResponse(
     int IdEvento,
     string Nombre,
-    DateTimeOffset FechaInicio,
-    DateTimeOffset FechaFin,
+    DateTime FechaInicio,
+    DateTime FechaFin,
     string? PaisLocal,
     string? PaisVisitante,
     string NombreEstadio,

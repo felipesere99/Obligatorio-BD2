@@ -15,13 +15,13 @@ public static class EventosEndpoints
             if (error is not null) return error;
 
             var id = await db.ScalarAsync<int>(
-                "SELECT fn_crear_evento(@nombre, @inicio, @fin, @local, @visitante, @estadio)",
+                "CALL sp_crear_evento(@nombre, @inicio, @fin, @local, @visitante, @estadio)",
                 p =>
                 {
                     p.AddWithValue("nombre", req.Nombre);
-                    // timestamptz exige UTC: normalizamos cualquier offset que mande el client.
-                    p.AddWithValue("inicio", req.FechaInicio.ToUniversalTime());
-                    p.AddWithValue("fin", req.FechaFin.ToUniversalTime());
+                    // DATETIME guarda en UTC por convención: normalizamos cualquier offset del client.
+                    p.AddWithValue("inicio", req.FechaInicio.UtcDateTime);
+                    p.AddWithValue("fin", req.FechaFin.UtcDateTime);
                     p.AddWithValue("local", req.PaisLocal);
                     p.AddWithValue("visitante", req.PaisVisitante);
                     p.AddWithValue("estadio", req.NombreEstadio);
@@ -37,7 +37,7 @@ public static class EventosEndpoints
             if (error is not null) return error;
 
             var sector = await db.ScalarAsync<string>(
-                "SELECT fn_habilitar_sector(@evento, @estadio, @sector)",
+                "CALL sp_habilitar_sector(@evento, @estadio, @sector)",
                 p =>
                 {
                     p.AddWithValue("evento", id);
@@ -74,8 +74,8 @@ public static class EventosEndpoints
                         evento = new EventoResponse(
                             idEvento,
                             r.GetString(1),
-                            r.GetFieldValue<DateTimeOffset>(2),
-                            r.GetFieldValue<DateTimeOffset>(3),
+                            r.GetDateTime(2),
+                            r.GetDateTime(3),
                             r.IsDBNull(4) ? null : r.GetString(4),
                             r.IsDBNull(5) ? null : r.GetString(5),
                             r.GetString(6),

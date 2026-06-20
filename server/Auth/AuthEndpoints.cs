@@ -11,7 +11,7 @@ public static class AuthEndpoints
         app.MapPost("/login", async (LoginRequest req, Db db) =>
         {
             var rows = await db.QueryAsync(
-                "SELECT documento, rol, nombre FROM fn_login(@doc)",
+                "CALL sp_login(@doc)",
                 r => new UserSession(r.GetString(0), r.GetString(1), r.GetString(2)),
                 p => p.AddWithValue("doc", req.Documento));
 

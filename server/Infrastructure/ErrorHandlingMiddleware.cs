@@ -1,41 +1,48 @@
 using System.Net;
-using Npgsql;
+using MySqlConnector;
 using Shared.Contracts;
 
 namespace Server.Api.Infrastructure;
 
 /// <summary>
-/// Traduce excepciones de Postgres a respuestas HTTP con cuerpo <see cref="ApiError"/>.
-/// En particular, los RAISE EXCEPTION de funciones y triggers (reglas de negocio)
-/// se reportan como 400 con el mensaje original.
+/// Traduce excepciones de MySQL a respuestas HTTP con cuerpo <see cref="ApiError"/>.
+/// En particular, los SIGNAL SQLSTATE '45000' de procedimientos y triggers
+/// (reglas de negocio) se reportan como 400 con el mensaje original.
 /// </summary>
 public sealed class ErrorHandlingMiddleware(RequestDelegate next, ILogger<ErrorHandlingMiddleware> logger)
 {
+    // Códigos de error de MySQL (https://dev.mysql.com/doc/mysql-errors/8.0/en/server-error-reference.html)
+    private const int ErSignalException     = 1644; // SIGNAL SQLSTATE '45000' => regla de negocio
+    private const int ErDupEntry            = 1062; // UNIQUE / PRIMARY KEY duplicado
+    private const int ErNoReferencedRow     = 1452; // FK: referencia a una fila inexistente
+    private const int ErRowIsReferenced     = 1451; // FK: borrar una fila aún referenciada
+    private const int ErCheckConstraint     = 3819; // violación de un CHECK
+
     public async Task Invoke(HttpContext context)
     {
         try
         {
             await next(context);
         }
-        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.RaiseException)
+        catch (MySqlException ex) when (ex.Number == ErSignalException)
         {
-            // RAISE EXCEPTION en una función/trigger => regla de negocio violada.
-            logger.LogWarning("Regla de negocio: {Message}", ex.MessageText);
-            await Write(context, HttpStatusCode.BadRequest, ex.MessageText);
+            // SIGNAL en un procedimiento/trigger => regla de negocio violada.
+            logger.LogWarning("Regla de negocio: {Message}", ex.Message);
+            await Write(context, HttpStatusCode.BadRequest, ex.Message);
         }
-        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.UniqueViolation)
+        catch (MySqlException ex) when (ex.Number == ErDupEntry)
         {
             await Write(context, HttpStatusCode.Conflict, "Ya existe un registro con esos datos.");
         }
-        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.ForeignKeyViolation)
+        catch (MySqlException ex) when (ex.Number is ErNoReferencedRow or ErRowIsReferenced)
         {
             await Write(context, HttpStatusCode.BadRequest, "Referencia a un registro inexistente.");
         }
-        catch (PostgresException ex) when (ex.SqlState == PostgresErrorCodes.CheckViolation)
+        catch (MySqlException ex) when (ex.Number == ErCheckConstraint)
         {
             await Write(context, HttpStatusCode.BadRequest, "Un valor no cumple una restricción del modelo.");
         }
-        catch (NpgsqlException ex)
+        catch (MySqlException ex)
         {
             logger.LogError(ex, "Error de base de datos");
             await Write(context, HttpStatusCode.ServiceUnavailable, "Base de datos no disponible.");

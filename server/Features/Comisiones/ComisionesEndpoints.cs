@@ -15,7 +15,7 @@ public static class ComisionesEndpoints
             if (error is not null) return error;
 
             var comision = await db.QuerySingleAsync(
-                "SELECT * FROM fn_set_comision(@pct)",
+                "CALL sp_set_comision(@pct)",
                 MapComision,
                 p => p.AddWithValue("pct", req.Porcentaje));
 
@@ -29,7 +29,7 @@ public static class ComisionesEndpoints
             if (error is not null) return error;
 
             var comision = await db.QuerySingleAsync(
-                "SELECT * FROM fn_comision_vigente()",
+                "CALL sp_comision_vigente()",
                 MapComision);
 
             return comision is null
@@ -38,6 +38,6 @@ public static class ComisionesEndpoints
         });
     }
 
-    private static ComisionResponse MapComision(Npgsql.NpgsqlDataReader r) =>
-        new(r.GetInt32(0), r.GetDecimal(1), r.GetFieldValue<DateTimeOffset>(2));
+    private static ComisionResponse MapComision(MySqlConnector.MySqlDataReader r) =>
+        new(r.GetInt32(0), r.GetDecimal(1), r.GetDateTime(2));
 }

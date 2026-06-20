@@ -15,7 +15,7 @@ public static class EstadiosEndpoints
             if (error is not null) return error;
 
             var nombre = await db.ScalarAsync<string>(
-                "SELECT fn_registrar_estadio(@nombre, @direccion)",
+                "CALL sp_registrar_estadio(@nombre, @direccion)",
                 p =>
                 {
                     p.AddWithValue("nombre", req.Nombre);
@@ -32,7 +32,7 @@ public static class EstadiosEndpoints
             if (error is not null) return error;
 
             var sector = await db.ScalarAsync<string>(
-                "SELECT fn_registrar_sector(@estadio, @nombre, @capacidad, @costo)",
+                "CALL sp_registrar_sector(@estadio, @nombre, @capacidad, @costo)",
                 p =>
                 {
                     p.AddWithValue("estadio", nombre);

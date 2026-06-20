@@ -4,4 +4,4 @@ namespace Shared.Contracts;
 public record SetComisionRequest(decimal Porcentaje);
 
 /// <summary>Comisión devuelta (la vigente o la recién creada).</summary>
-public record ComisionResponse(int IdComision, decimal Porcentaje, DateTimeOffset VigenteDesde);
+public record ComisionResponse(int IdComision, decimal Porcentaje, DateTime VigenteDesde);

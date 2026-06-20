@@ -12,7 +12,7 @@ public static class UsuariosEndpoints
         app.MapPost("/usuarios/generales", async (RegistrarUsuarioRequest req, Db db) =>
         {
             var doc = await db.ScalarAsync<string>(
-                "SELECT fn_registrar_usuario_general(@doc, @nombre, @apellido, @correo, @pais, @localidad, @calle, @numero, @cp)",
+                "CALL sp_registrar_usuario_general(@doc, @nombre, @apellido, @correo, @pais, @localidad, @calle, @numero, @cp)",
                 p =>
                 {
                     p.AddWithValue("doc", req.Documento);

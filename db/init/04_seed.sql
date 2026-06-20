@@ -1,4 +1,5 @@
 -- ============================================================
+--  04_seed.sql — Datos de prueba (dialecto MySQL 8).
 --  (Solo corre en la primera inicialización del volumen; para
 --   recargar: `docker compose down -v && docker compose up -d`.)
 -- ============================================================
@@ -15,16 +16,15 @@ INSERT INTO sector(nombre_estadio, nombre, capacidad, costo_entrada) VALUES
  ('Centenario','B',  80, 100.00);
 
 -- ---------- Evento + sectores habilitados ----------
+-- Insertamos id_evento explícito; MySQL continúa el AUTO_INCREMENT desde el máximo.
 INSERT INTO evento(id_evento, nombre, fecha_inicio, fecha_fin, pais_local, pais_visitante, nombre_estadio) VALUES
- (1,'Uruguay vs Argentina','2026-06-15 18:00+00','2026-06-15 20:00+00','URU','ARG','Centenario');
+ (1,'Uruguay vs Argentina','2026-06-15 18:00:00','2026-06-15 20:00:00','URU','ARG','Centenario');
 INSERT INTO evento_sector(id_evento, nombre_estadio, nombre_sector) VALUES
  (1,'Centenario','A'),
  (1,'Centenario','B');
--- Sincronizar el serial porque insertamos id_evento explícito
-SELECT setval('evento_id_evento_seq', (SELECT max(id_evento) FROM evento));
 
 -- ---------- Comisión vigente (5%) ----------
-INSERT INTO comision(porcentaje, vigente_desde) VALUES (5.00, '2026-01-01 00:00+00');
+INSERT INTO comision(porcentaje, vigente_desde) VALUES (5.00, '2026-01-01 00:00:00');
 
 -- ---------- Administrador ----------
 INSERT INTO administrador(documento, nombre, apellido, correo, cargo) VALUES
@@ -33,7 +33,7 @@ INSERT INTO administrador(documento, nombre, apellido, correo, cargo) VALUES
 -- ---------- Funcionario + dispositivo + asignación ----------
 INSERT INTO funcionario(documento, nombre, apellido, correo, nro_legajo) VALUES
  ('FUN-1','Fabián','Validez','funcio@ticketing.uy','LEG-001');
-INSERT INTO dispositivo DEFAULT VALUES;   -- id_dispositivo = 1
+INSERT INTO dispositivo () VALUES ();   -- id_dispositivo = 1
 INSERT INTO funcionario_dispositivo(doc_funcionario, id_dispositivo) VALUES
  ('FUN-1', 1);
 INSERT INTO funcionario_asignado(doc_funcionario, nombre_estadio, nombre_sector, id_evento) VALUES

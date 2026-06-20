@@ -19,7 +19,7 @@ public record CompraResponse(
     int NroVenta,
     decimal MontoTotal,
     string Estado,
-    DateTimeOffset Fecha,
+    DateTime Fecha,
     int CantidadEntradas);
 
 /// <summary>Una entrada de una venta.</summary>
