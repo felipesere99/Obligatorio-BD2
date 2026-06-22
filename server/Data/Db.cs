@@ -64,4 +64,27 @@ public sealed class Db(MySqlDataSource dataSource)
         bind?.Invoke(cmd.Parameters);
         return await cmd.ExecuteNonQueryAsync(ct);
     }
+
+    /// <summary>
+    /// Ejecuta <paramref name="work"/> dentro de una transacción: abre conexión,
+    /// BEGIN, invoca el delegate (pasándole la conexión abierta), COMMIT.
+    /// Si <paramref name="work"/> lanza, hace ROLLBACK y re-lanza.
+    /// </summary>
+    public async Task TransactionAsync(
+        Func<MySqlConnection, CancellationToken, Task> work,
+        CancellationToken ct = default)
+    {
+        await using var conn = await dataSource.OpenConnectionAsync(ct);
+        await using var tx = await conn.BeginTransactionAsync(ct);
+        try
+        {
+            await work(conn, ct);
+            await tx.CommitAsync(ct);
+        }
+        catch
+        {
+            await tx.RollbackAsync(ct);
+            throw;
+        }
+    }
 }
