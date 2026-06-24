@@ -11,14 +11,28 @@ public static class UsuariosEndpoints
         // POST /usuarios/generales (público) -> registra un usuario general.
         app.MapPost("/usuarios/generales", async (RegistrarUsuarioRequest req, Db db) =>
         {
-            var doc = await db.ScalarAsync<string>(
-                "CALL sp_registrar_usuario_general(@doc, @nombre, @apellido, @correo, @pais, @localidad, @calle, @numero, @cp)",
+            if (string.IsNullOrWhiteSpace(req.Documento))
+                return Results.BadRequest(new ApiError("El documento es obligatorio."));
+            if (string.IsNullOrWhiteSpace(req.Nombre))
+                return Results.BadRequest(new ApiError("El nombre es obligatorio."));
+            if (string.IsNullOrWhiteSpace(req.Apellido))
+                return Results.BadRequest(new ApiError("El apellido es obligatorio."));
+            if (string.IsNullOrWhiteSpace(req.Correo))
+                return Results.BadRequest(new ApiError("El correo es obligatorio."));
+
+            await db.ExecuteAsync(
+                """
+                INSERT INTO usuario_general(
+                    documento, nombre, apellido, correo,
+                    dir_pais, dir_localidad, dir_calle, dir_numero, dir_codigo_postal
+                ) VALUES (@doc, @nombre, @apellido, @correo, @pais, @localidad, @calle, @numero, @cp)
+                """,
                 p =>
                 {
-                    p.AddWithValue("doc", req.Documento);
-                    p.AddWithValue("nombre", req.Nombre);
-                    p.AddWithValue("apellido", req.Apellido);
-                    p.AddWithValue("correo", req.Correo);
+                    p.AddWithValue("doc", req.Documento.Trim());
+                    p.AddWithValue("nombre", req.Nombre.Trim());
+                    p.AddWithValue("apellido", req.Apellido.Trim());
+                    p.AddWithValue("correo", req.Correo.Trim());
                     p.AddWithValue("pais", (object?)req.DirPais ?? DBNull.Value);
                     p.AddWithValue("localidad", (object?)req.DirLocalidad ?? DBNull.Value);
                     p.AddWithValue("calle", (object?)req.DirCalle ?? DBNull.Value);
@@ -26,6 +40,7 @@ public static class UsuariosEndpoints
                     p.AddWithValue("cp", (object?)req.DirCodigoPostal ?? DBNull.Value);
                 });
 
+            var doc = req.Documento.Trim();
             return Results.Created($"/usuarios/generales/{doc}", new { documento = doc });
         });
 

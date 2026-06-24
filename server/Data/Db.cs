@@ -52,6 +52,20 @@ public sealed class Db(MySqlDataSource dataSource)
         return rows.Count > 0 ? rows[0] : default;
     }
 
+    /// <summary>Ejecuta un INSERT y devuelve el id autogenerado (<c>LAST_INSERT_ID()</c>).</summary>
+    public async Task<long> InsertAsync(
+        string sql,
+        Action<MySqlParameterCollection>? bind = null,
+        CancellationToken ct = default)
+    {
+        await using var conn = await dataSource.OpenConnectionAsync(ct);
+        await using var cmd = conn.CreateCommand();
+        cmd.CommandText = sql;
+        bind?.Invoke(cmd.Parameters);
+        await cmd.ExecuteNonQueryAsync(ct);
+        return cmd.LastInsertedId;
+    }
+
     /// <summary>Ejecuta un comando sin resultado (INSERT/UPDATE/DELETE); devuelve filas afectadas.</summary>
     public async Task<int> ExecuteAsync(
         string sql,
@@ -63,5 +77,28 @@ public sealed class Db(MySqlDataSource dataSource)
         cmd.CommandText = sql;
         bind?.Invoke(cmd.Parameters);
         return await cmd.ExecuteNonQueryAsync(ct);
+    }
+
+    /// <summary>
+    /// Ejecuta <paramref name="work"/> dentro de una transacción: abre conexión,
+    /// BEGIN, invoca el delegate (pasándole la conexión abierta), COMMIT.
+    /// Si <paramref name="work"/> lanza, hace ROLLBACK y re-lanza.
+    /// </summary>
+    public async Task TransactionAsync(
+        Func<MySqlConnection, CancellationToken, Task> work,
+        CancellationToken ct = default)
+    {
+        await using var conn = await dataSource.OpenConnectionAsync(ct);
+        await using var tx = await conn.BeginTransactionAsync(ct);
+        try
+        {
+            await work(conn, ct);
+            await tx.CommitAsync(ct);
+        }
+        catch
+        {
+            await tx.RollbackAsync(ct);
+            throw;
+        }
     }
 }
