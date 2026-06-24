@@ -16,7 +16,15 @@ var connString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")
     ?? builder.Configuration.GetConnectionString("Default")
     ?? throw new InvalidOperationException("No connection string configured.");
 
-builder.Services.AddSingleton(new MySqlDataSource(connString));
+// IgnoreCommandTransaction: los comandos creados con conn.CreateCommand() dentro
+// de una transacción (ver Db.TransactionAsync) participan de la transacción activa
+// sin tener que asignarles cmd.Transaction a mano.
+var dataSourceConnString = new MySqlConnectionStringBuilder(connString)
+{
+    IgnoreCommandTransaction = true,
+}.ConnectionString;
+
+builder.Services.AddSingleton(new MySqlDataSource(dataSourceConnString));
 builder.Services.AddSingleton<Db>();
 
 // CORS para el front de React. En desarrollo Vite puede arrancar en cualquier
