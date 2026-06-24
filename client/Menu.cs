@@ -198,26 +198,32 @@ public static class Menu
     private static async Task ComprarEntradas(ApiClient api)
     {
         Console.WriteLine("\n-- Comprar entradas (hasta 5) --");
-        Console.WriteLine("Dejá vacío el id de evento para terminar de cargar items.");
+
+        var eventos = await api.GetAsync<List<EventoResponse>>("/eventos");
+        if (eventos.Count == 0)
+        {
+            Console.WriteLine("No hay eventos disponibles.");
+            return;
+        }
+
+        var estadios = await api.GetAsync<List<EstadioResponse>>("/estadios");
+        var estadiosPorNombre = estadios.ToDictionary(e => e.Nombre);
 
         var items = new List<CompraItem>();
         while (items.Count < 5)
         {
             Console.WriteLine($"\nItem #{items.Count + 1}:");
-            var idRaw = PromptOptional("  Id de evento (vacío = terminar)");
-            if (idRaw is null)
+            var evento = PromptEvento(eventos);
+            if (evento is null)
                 break;
-            if (!int.TryParse(idRaw, out var idEvento))
-            {
-                Console.WriteLine("  Id inválido, reintentá.");
-                continue;
-            }
 
-            var estadio = Prompt("  Estadio");
-            var sector = Prompt("  Sector");
+            var sector = PromptSectorEvento(evento, estadiosPorNombre);
+            if (sector is null)
+                continue;
+
             var fila = PromptOptional("  Fila (opcional)");
             var asiento = PromptOptional("  Asiento (opcional)");
-            items.Add(new CompraItem(idEvento, estadio, sector, fila, asiento));
+            items.Add(new CompraItem(evento.IdEvento, evento.NombreEstadio, sector, fila, asiento));
         }
 
         if (items.Count == 0)
@@ -228,6 +234,58 @@ public static class Menu
 
         var venta = await api.PostAsync<VentaCreadaResponse>("/ventas", new CrearVentaRequest(items));
         Console.WriteLine($"Compra OK. Venta #{venta.NroVenta} — total ${venta.MontoTotal} ({items.Count} entrada(s)).");
+    }
+
+    private static EventoResponse? PromptEvento(List<EventoResponse> eventos)
+    {
+        Console.WriteLine("  Eventos disponibles:");
+        for (var i = 0; i < eventos.Count; i++)
+        {
+            var e = eventos[i];
+            Console.WriteLine(
+                $"    {i + 1}) #{e.IdEvento} {e.Nombre} — {e.PaisLocal} vs {e.PaisVisitante} @ {e.NombreEstadio}");
+        }
+        Console.WriteLine("    0) Terminar");
+
+        while (true)
+        {
+            var sel = PromptOptional("  Elegí evento (número)");
+            if (sel is null || sel == "0")
+                return null;
+            if (int.TryParse(sel, out var n) && n >= 1 && n <= eventos.Count)
+                return eventos[n - 1];
+            Console.WriteLine("  Opción inválida, reintentá.");
+        }
+    }
+
+    private static string? PromptSectorEvento(EventoResponse evento, Dictionary<string, EstadioResponse> estadios)
+    {
+        if (evento.SectoresHabilitados.Count == 0)
+        {
+            Console.WriteLine($"  El evento #{evento.IdEvento} no tiene sectores habilitados.");
+            return null;
+        }
+
+        estadios.TryGetValue(evento.NombreEstadio, out var estadio);
+        var costos = estadio?.Sectores.ToDictionary(s => s.Nombre, s => s.CostoEntrada)
+            ?? new Dictionary<string, decimal>();
+
+        Console.WriteLine($"  Estadio: {evento.NombreEstadio}");
+        Console.WriteLine("  Sectores habilitados:");
+        for (var i = 0; i < evento.SectoresHabilitados.Count; i++)
+        {
+            var nombre = evento.SectoresHabilitados[i];
+            var precio = costos.TryGetValue(nombre, out var c) ? $" (${c})" : "";
+            Console.WriteLine($"    {i + 1}) {nombre}{precio}");
+        }
+
+        while (true)
+        {
+            var sel = Prompt("  Elegí sector (número)");
+            if (int.TryParse(sel, out var n) && n >= 1 && n <= evento.SectoresHabilitados.Count)
+                return evento.SectoresHabilitados[n - 1];
+            Console.WriteLine("  Opción inválida, reintentá.");
+        }
     }
 
     private static async Task TransferirEntrada(ApiClient api)

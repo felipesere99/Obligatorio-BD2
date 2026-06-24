@@ -1,31 +1,48 @@
 import { useState } from "react";
 import { api } from "../lib/api";
-import type { CompraItem, VentaCreada } from "../lib/types";
-import { Banner, Card, Field, errorMessage } from "../components/ui";
+import type { CompraItem, Estadio, Evento, VentaCreada } from "../lib/types";
+import { Banner, Card, Field, Loading, errorMessage, useAsync } from "../components/ui";
 
 const MAX_ITEMS = 5;
 
 export function Comprar() {
+  const eventos = useAsync(() => api.get<Evento[]>("/eventos"));
+  const estadios = useAsync(() => api.get<Estadio[]>("/estadios"));
+
   const [items, setItems] = useState<CompraItem[]>([]);
-  const [draft, setDraft] = useState({ idEvento: "", estadio: "", sector: "", fila: "", asiento: "" });
+  const [idEvento, setIdEvento] = useState("");
+  const [sector, setSector] = useState("");
+  const [fila, setFila] = useState("");
+  const [asiento, setAsiento] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const evento = eventos.data?.find((e) => String(e.idEvento) === idEvento);
+  const estadio = estadios.data?.find((es) => es.nombre === evento?.nombreEstadio);
+  const sectores = estadio?.sectores.filter((s) => evento?.sectoresHabilitados.includes(s.nombre)) ?? [];
+
+  function resetDraft() {
+    setIdEvento("");
+    setSector("");
+    setFila("");
+    setAsiento("");
+  }
+
   function addItem(e: React.FormEvent) {
     e.preventDefault();
-    if (items.length >= MAX_ITEMS) return;
+    if (!evento || items.length >= MAX_ITEMS) return;
     setItems((prev) => [
       ...prev,
       {
-        idEvento: Number(draft.idEvento),
-        estadio: draft.estadio.trim(),
-        sector: draft.sector.trim(),
-        fila: draft.fila.trim() || null,
-        asiento: draft.asiento.trim() || null,
+        idEvento: evento.idEvento,
+        estadio: evento.nombreEstadio,
+        sector,
+        fila: fila.trim() || null,
+        asiento: asiento.trim() || null,
       },
     ]);
-    setDraft({ idEvento: "", estadio: "", sector: "", fila: "", asiento: "" });
+    resetDraft();
     setOk(null);
   }
 
@@ -48,25 +65,75 @@ export function Comprar() {
     }
   }
 
-  function set(k: keyof typeof draft, v: string) {
-    setDraft((d) => ({ ...d, [k]: v }));
+  function labelEvento(id: number) {
+    const ev = eventos.data?.find((e) => e.idEvento === id);
+    return ev ? `#${ev.idEvento} — ${ev.nombre}` : String(id);
   }
+
+  const loading = eventos.loading || estadios.loading;
+  const loadErr = eventos.error ?? estadios.error;
 
   return (
     <div className="stack">
       <Card title="Comprar entradas">
-        <p className="muted small">
-          Agregá hasta {MAX_ITEMS} entradas. Necesitás el id de evento, estadio y sector
-          (pedíselos al administrador del evento).
-        </p>
-        <form onSubmit={addItem} className="grid-form">
-          <Field label="Id de evento" type="number" min={1} value={draft.idEvento} onChange={(e) => set("idEvento", e.target.value)} required />
-          <Field label="Estadio" value={draft.estadio} onChange={(e) => set("estadio", e.target.value)} required />
-          <Field label="Sector" value={draft.sector} onChange={(e) => set("sector", e.target.value)} required />
-          <Field label="Fila (opcional)" value={draft.fila} onChange={(e) => set("fila", e.target.value)} />
-          <Field label="Asiento (opcional)" value={draft.asiento} onChange={(e) => set("asiento", e.target.value)} />
-          <button type="submit" disabled={items.length >= MAX_ITEMS}>Agregar ítem</button>
-        </form>
+        <p className="muted small">Agregá hasta {MAX_ITEMS} entradas al carrito.</p>
+        {loading && <Loading />}
+        {loadErr && <Banner kind="error">{loadErr}</Banner>}
+        {eventos.data && eventos.data.length === 0 && (
+          <p className="muted">No hay eventos disponibles.</p>
+        )}
+        {eventos.data && eventos.data.length > 0 && (
+          <form onSubmit={addItem} className="grid-form">
+            <label className="field">
+              <span>Evento</span>
+              <select
+                value={idEvento}
+                onChange={(e) => { setIdEvento(e.target.value); setSector(""); }}
+                required
+              >
+                <option value="">— elegir evento —</option>
+                {eventos.data.map((ev) => (
+                  <option key={ev.idEvento} value={ev.idEvento}>
+                    #{ev.idEvento} — {ev.nombre} ({ev.paisLocal} vs {ev.paisVisitante})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Field
+              label="Estadio"
+              value={evento?.nombreEstadio ?? ""}
+              readOnly
+              placeholder="Elegí un evento"
+            />
+            <label className="field">
+              <span>Sector{evento ? ` (${evento.nombreEstadio})` : ""}</span>
+              <select
+                value={sector}
+                onChange={(e) => setSector(e.target.value)}
+                required
+                disabled={!evento || sectores.length === 0}
+              >
+                <option value="">
+                  {!evento
+                    ? "— elegir evento primero —"
+                    : sectores.length === 0
+                      ? "— sin sectores habilitados —"
+                      : "— elegir sector —"}
+                </option>
+                {sectores.map((s) => (
+                  <option key={s.nombre} value={s.nombre}>
+                    {s.nombre} — ${s.costoEntrada}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Field label="Fila (opcional)" value={fila} onChange={(e) => setFila(e.target.value)} disabled={!evento} />
+            <Field label="Asiento (opcional)" value={asiento} onChange={(e) => setAsiento(e.target.value)} disabled={!evento} />
+            <button type="submit" disabled={items.length >= MAX_ITEMS || !evento || !sector}>
+              Agregar ítem
+            </button>
+          </form>
+        )}
       </Card>
 
       <Card title={`Carrito (${items.length}/${MAX_ITEMS})`}>
@@ -80,8 +147,11 @@ export function Comprar() {
             <tbody>
               {items.map((it, i) => (
                 <tr key={i}>
-                  <td>{it.idEvento}</td><td>{it.estadio}</td><td>{it.sector}</td>
-                  <td>{it.fila ?? "-"}</td><td>{it.asiento ?? "-"}</td>
+                  <td>{labelEvento(it.idEvento)}</td>
+                  <td>{it.estadio}</td>
+                  <td>{it.sector}</td>
+                  <td>{it.fila ?? "-"}</td>
+                  <td>{it.asiento ?? "-"}</td>
                   <td><button className="link" onClick={() => removeItem(i)}>quitar</button></td>
                 </tr>
               ))}

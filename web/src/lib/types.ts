@@ -148,6 +148,24 @@ export interface Validacion {
   idDispositivo: number;
 }
 
+export interface Transferencia {
+  nroEntrada: number;
+  fechaHora: string;
+  contador: number;
+  docEmisor: string;
+  docReceptor: string;
+  estado: "pendiente" | "aceptada" | "rechazada" | "cancelada";
+}
+
+export interface EntradaTenencia {
+  nroEntrada: number;
+  idEvento: number;
+  nombreEstadio: string;
+  nombreSector: string;
+  fila: string | null;
+  asiento: string | null;
+}
+
 export interface ReporteComprador {
   documento: string;
   nombre: string;
