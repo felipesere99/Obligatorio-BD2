@@ -22,3 +22,11 @@ public record UsuarioGeneralResponse(
     string Apellido,
     string Correo,
     bool EstadoVerificacion);
+
+/// <summary>Funcionario devuelto en el listado (admin).</summary>
+public record FuncionarioResponse(
+    string Documento,
+    string Nombre,
+    string Apellido,
+    string Correo,
+    string NroLegajo);

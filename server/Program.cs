@@ -1,6 +1,7 @@
 using MySqlConnector;
 using Server.Api.Auth;
 using Server.Api.Data;
+using Server.Api.Features.Asignaciones;
 using Server.Api.Features.Comisiones;
 using Server.Api.Features.Equipos;
 using Server.Api.Features.Estadios;
@@ -73,5 +74,6 @@ app.MapEstadios();
 app.MapEventos();
 app.MapComisiones();
 app.MapVentas();
+app.MapAsignaciones();
 
 app.Run();

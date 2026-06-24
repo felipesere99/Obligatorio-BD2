@@ -61,5 +61,23 @@ public static class UsuariosEndpoints
 
             return Results.Ok(rows);
         });
+
+        // GET /usuarios/funcionarios (admin) -> lista todos los funcionarios.
+        app.MapGet("/usuarios/funcionarios", async (HttpContext ctx, Db db) =>
+        {
+            var (_, error) = ctx.Authorize(Roles.Administrador);
+            if (error is not null) return error;
+
+            var rows = await db.QueryAsync(
+                """
+                SELECT documento, nombre, apellido, correo, nro_legajo
+                FROM funcionario
+                ORDER BY documento
+                """,
+                r => new FuncionarioResponse(
+                    r.GetString(0), r.GetString(1), r.GetString(2), r.GetString(3), r.GetString(4)));
+
+            return Results.Ok(rows);
+        });
     }
 }
