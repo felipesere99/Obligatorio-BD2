@@ -40,9 +40,9 @@ public static class Menu
             new("Verificar conexión (health)", Health),
             new("Comprar entradas", ComprarEntradas),
             new("Mis compras", MisCompras),
-            // Persona B: new("Transferir entrada", ...),
-            //            new("Mis transferencias", ...),
-            //            new("Mis entradas", ...),
+            new("Transferir entrada", TransferirEntrada),
+            new("Mis transferencias", MisTransferencias),
+            new("Mis entradas", MisEntradas),
         },
         _ => new() { new("Verificar conexión (health)", Health) },
     };
@@ -228,6 +228,68 @@ public static class Menu
 
         var venta = await api.PostAsync<VentaCreadaResponse>("/ventas", new CrearVentaRequest(items));
         Console.WriteLine($"Compra OK. Venta #{venta.NroVenta} — total ${venta.MontoTotal} ({items.Count} entrada(s)).");
+    }
+
+    private static async Task TransferirEntrada(ApiClient api)
+    {
+        Console.WriteLine("\n-- Transferir entrada --");
+        var nroEntrada = PromptInt("Nro. de entrada");
+        var docReceptor = Prompt("Documento del receptor");
+
+        var t = await api.PostAsync<TransferenciaResponse>(
+            "/transferencias", new IniciarTransferenciaRequest(nroEntrada, docReceptor));
+        Console.WriteLine(
+            $"Transferencia iniciada: entrada #{t.NroEntrada} → {t.DocReceptor} (estado {t.Estado}, contador {t.Contador}).");
+    }
+
+    private static async Task MisTransferencias(ApiClient api)
+    {
+        var doc = api.Session!.Documento;
+        var transferencias = await api.GetAsync<List<TransferenciaResponse>>($"/usuarios/{doc}/transferencias");
+        if (transferencias.Count == 0)
+        {
+            Console.WriteLine("No tenés transferencias.");
+            return;
+        }
+
+        Console.WriteLine($"\n{"Entrada",-8} {"Fecha",-18} {"Cont.",-5} {"Emisor",-12} {"Receptor",-12} Estado");
+        foreach (var t in transferencias)
+            Console.WriteLine(
+                $"#{t.NroEntrada,-7} {t.FechaHora:yyyy-MM-dd HH:mm,-18} {t.Contador,-5} {t.DocEmisor,-12} {t.DocReceptor,-12} {t.Estado}");
+
+        var sel = PromptOptional("\nResolver transferencia pendiente de qué entrada (vacío para volver)");
+        if (sel is null || !int.TryParse(sel, out var nro))
+            return;
+
+        var pendiente = transferencias.Find(t => t.NroEntrada == nro && t.Estado == "pendiente");
+        if (pendiente is null)
+        {
+            Console.WriteLine("No hay transferencia pendiente para esa entrada.");
+            return;
+        }
+
+        Console.WriteLine("Acción: aceptar | rechazar | cancelar");
+        var accion = Prompt("Acción");
+        var res = await api.PatchAsync<TransferenciaResponse>(
+            $"/transferencias/{nro}", new ResolverTransferenciaRequest(accion));
+        Console.WriteLine($"Transferencia #{res.NroEntrada} → estado {res.Estado}.");
+    }
+
+    private static async Task MisEntradas(ApiClient api)
+    {
+        var doc = api.Session!.Documento;
+        var entradas = await api.GetAsync<List<EntradaTenenciaResponse>>($"/usuarios/{doc}/entradas");
+        if (entradas.Count == 0)
+        {
+            Console.WriteLine("No tenés entradas.");
+            return;
+        }
+
+        Console.WriteLine($"\n{"Entrada",-8} {"Evento",-7} Estadio / Sector");
+        foreach (var e in entradas)
+            Console.WriteLine(
+                $"#{e.NroEntrada,-7} #{e.IdEvento,-6} {e.NombreEstadio}/{e.NombreSector}" +
+                $"{(e.Fila is null && e.Asiento is null ? "" : $" (fila {e.Fila ?? "-"}, asiento {e.Asiento ?? "-"})")}");
     }
 
     private static async Task MisCompras(ApiClient api)
