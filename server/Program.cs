@@ -7,6 +7,7 @@ using Server.Api.Features.Equipos;
 using Server.Api.Features.Estadios;
 using Server.Api.Features.Eventos;
 using Server.Api.Features.Reportes;
+using Server.Api.Features.Transferencias;
 using Server.Api.Features.Usuarios;
 using Server.Api.Features.Validaciones;
 using Server.Api.Features.Ventas;
@@ -69,7 +70,6 @@ app.MapAuth();
 //  y registrarlo acá.
 // ============================================================
 
-// ---------- Persona A ----------
 app.MapUsuarios();
 app.MapEquipos();
 app.MapEstadios();
@@ -78,8 +78,7 @@ app.MapComisiones();
 app.MapVentas();
 app.MapAsignaciones();
 app.MapReportes();
-
-// ---------- Persona B ----------
 app.MapValidaciones();
+app.MapTransferencias();
 
 app.Run();

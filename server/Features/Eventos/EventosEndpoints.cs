@@ -63,10 +63,10 @@ public static class EventosEndpoints
                 new { idEvento = id, nombreEstadio = req.NombreEstadio, nombreSector = sector });
         });
 
-        // GET /eventos (admin) -> lista los eventos con sus sectores habilitados.
+        // GET /eventos (admin, usuario_general) -> lista los eventos con sus sectores habilitados.
         app.MapGet("/eventos", async (HttpContext ctx, Db db) =>
         {
-            var (_, error) = ctx.Authorize(Roles.Administrador);
+            var (_, error) = ctx.Authorize(Roles.Administrador, Roles.UsuarioGeneral);
             if (error is not null) return error;
 
             var eventos = new Dictionary<int, EventoResponse>();
