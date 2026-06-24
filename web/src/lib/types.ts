@@ -126,6 +126,28 @@ export interface ReporteSectorVentas {
   totalVentas: number;
 }
 
+export interface Qr {
+  idCodigo: number;
+  nroEntrada: number;
+  codigo: string;
+  generadoEn: string;
+  expiraEnSegundos: number;
+}
+
+export interface Dispositivo {
+  idDispositivo: number;
+}
+
+export interface Validacion {
+  nroEntrada: number;
+  idEvento: number;
+  nombreEstadio: string;
+  nombreSector: string;
+  fechaHora: string;
+  docFuncionario: string;
+  idDispositivo: number;
+}
+
 export interface ReporteComprador {
   documento: string;
   nombre: string;

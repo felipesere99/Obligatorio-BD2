@@ -8,6 +8,7 @@ using Server.Api.Features.Estadios;
 using Server.Api.Features.Eventos;
 using Server.Api.Features.Reportes;
 using Server.Api.Features.Usuarios;
+using Server.Api.Features.Validaciones;
 using Server.Api.Features.Ventas;
 using Server.Api.Infrastructure;
 using Shared;
@@ -77,5 +78,8 @@ app.MapComisiones();
 app.MapVentas();
 app.MapAsignaciones();
 app.MapReportes();
+
+// ---------- Persona B ----------
+app.MapValidaciones();
 
 app.Run();
