@@ -44,7 +44,7 @@ app.UseMiddleware<ErrorHandlingMiddleware>();
 // ---------- Health ----------
 app.MapGet("/health", async (Db db) =>
 {
-    var pong = await db.ScalarAsync<string>("SELECT fn_ping()");
+    var pong = await db.ScalarAsync<string>("SELECT 'pong'");
     return Results.Ok(new PingResult(pong ?? "?"));
 });
 

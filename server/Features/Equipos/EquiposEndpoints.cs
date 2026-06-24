@@ -14,15 +14,21 @@ public static class EquiposEndpoints
             var (_, error) = ctx.Authorize(Roles.Administrador);
             if (error is not null) return error;
 
-            var pais = await db.ScalarAsync<string>(
-                "CALL sp_registrar_equipo(@pais, @nombre)",
+            if (string.IsNullOrWhiteSpace(req.Pais))
+                return Results.BadRequest(new ApiError("El país es obligatorio."));
+            if (string.IsNullOrWhiteSpace(req.Nombre))
+                return Results.BadRequest(new ApiError("El nombre es obligatorio."));
+
+            await db.ExecuteAsync(
+                "INSERT INTO equipo(pais, nombre) VALUES (@pais, @nombre)",
                 p =>
                 {
-                    p.AddWithValue("pais", req.Pais);
-                    p.AddWithValue("nombre", req.Nombre);
+                    p.AddWithValue("pais", req.Pais.Trim());
+                    p.AddWithValue("nombre", req.Nombre.Trim());
                 });
 
-            return Results.Created($"/equipos/{pais}", new EquipoResponse(pais!, req.Nombre.Trim()));
+            var pais = req.Pais.Trim();
+            return Results.Created($"/equipos/{pais}", new EquipoResponse(pais, req.Nombre.Trim()));
         });
 
         // GET /equipos (admin) -> lista todos los equipos.

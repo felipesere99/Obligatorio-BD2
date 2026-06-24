@@ -14,14 +14,18 @@ public static class EstadiosEndpoints
             var (_, error) = ctx.Authorize(Roles.Administrador);
             if (error is not null) return error;
 
-            var nombre = await db.ScalarAsync<string>(
-                "CALL sp_registrar_estadio(@nombre, @direccion)",
+            if (string.IsNullOrWhiteSpace(req.Nombre))
+                return Results.BadRequest(new ApiError("El nombre del estadio es obligatorio."));
+
+            await db.ExecuteAsync(
+                "INSERT INTO estadio(nombre, direccion) VALUES (@nombre, @direccion)",
                 p =>
                 {
-                    p.AddWithValue("nombre", req.Nombre);
+                    p.AddWithValue("nombre", req.Nombre.Trim());
                     p.AddWithValue("direccion", (object?)req.Direccion ?? DBNull.Value);
                 });
 
+            var nombre = req.Nombre.Trim();
             return Results.Created($"/estadios/{nombre}", new { nombre });
         });
 
@@ -31,18 +35,26 @@ public static class EstadiosEndpoints
             var (_, error) = ctx.Authorize(Roles.Administrador);
             if (error is not null) return error;
 
-            var sector = await db.ScalarAsync<string>(
-                "CALL sp_registrar_sector(@estadio, @nombre, @capacidad, @costo)",
+            if (string.IsNullOrWhiteSpace(req.Nombre))
+                return Results.BadRequest(new ApiError("El nombre del sector es obligatorio."));
+            if (req.Capacidad <= 0)
+                return Results.BadRequest(new ApiError("La capacidad debe ser mayor a cero."));
+            if (req.CostoEntrada < 0)
+                return Results.BadRequest(new ApiError("El costo de entrada no puede ser negativo."));
+
+            await db.ExecuteAsync(
+                "INSERT INTO sector(nombre_estadio, nombre, capacidad, costo_entrada) VALUES (@estadio, @sectorNombre, @capacidad, @costo)",
                 p =>
                 {
                     p.AddWithValue("estadio", nombre);
-                    p.AddWithValue("nombre", req.Nombre);
+                    p.AddWithValue("sectorNombre", req.Nombre.Trim());
                     p.AddWithValue("capacidad", req.Capacidad);
                     p.AddWithValue("costo", req.CostoEntrada);
                 });
 
+            var sector = req.Nombre.Trim();
             return Results.Created($"/estadios/{nombre}/sectores/{sector}",
-                new SectorResponse(sector!, req.Capacidad, req.CostoEntrada));
+                new SectorResponse(sector, req.Capacidad, req.CostoEntrada));
         });
 
         // GET /estadios (admin) -> lista los estadios con sus sectores.
@@ -75,7 +87,7 @@ public static class EstadiosEndpoints
                     if (!r.IsDBNull(2))
                         estadio.Sectores.Add(new SectorResponse(r.GetString(2), r.GetInt32(3), r.GetDecimal(4)));
 
-                    return 0; // el mapeo acumula en el diccionario; el valor no se usa
+                    return 0;
                 });
 
             return Results.Ok(estadios.Values);

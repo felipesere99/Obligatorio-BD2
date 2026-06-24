@@ -14,20 +14,28 @@ public static class EventosEndpoints
             var (_, error) = ctx.Authorize(Roles.Administrador);
             if (error is not null) return error;
 
-            var id = await db.ScalarAsync<int>(
-                "CALL sp_crear_evento(@nombre, @inicio, @fin, @local, @visitante, @estadio)",
+            if (string.IsNullOrWhiteSpace(req.Nombre))
+                return Results.BadRequest(new ApiError("El nombre del evento es obligatorio."));
+            if (string.IsNullOrWhiteSpace(req.NombreEstadio))
+                return Results.BadRequest(new ApiError("El estadio es obligatorio."));
+
+            var id = await db.InsertAsync(
+                """
+                INSERT INTO evento(nombre, fecha_inicio, fecha_fin, pais_local, pais_visitante, nombre_estadio)
+                VALUES (@nombre, @inicio, @fin, @local, @visitante, @estadio)
+                """,
                 p =>
                 {
-                    p.AddWithValue("nombre", req.Nombre);
+                    p.AddWithValue("nombre", req.Nombre.Trim());
                     // DATETIME guarda en UTC por convención: normalizamos cualquier offset del client.
                     p.AddWithValue("inicio", req.FechaInicio.UtcDateTime);
                     p.AddWithValue("fin", req.FechaFin.UtcDateTime);
                     p.AddWithValue("local", req.PaisLocal);
                     p.AddWithValue("visitante", req.PaisVisitante);
-                    p.AddWithValue("estadio", req.NombreEstadio);
+                    p.AddWithValue("estadio", req.NombreEstadio.Trim());
                 });
 
-            return Results.Created($"/eventos/{id}", new EventoCreadoResponse(id));
+            return Results.Created($"/eventos/{id}", new EventoCreadoResponse((int)id));
         });
 
         // POST /eventos/{id}/sectores (admin) -> habilita un sector para el evento.
@@ -36,15 +44,21 @@ public static class EventosEndpoints
             var (_, error) = ctx.Authorize(Roles.Administrador);
             if (error is not null) return error;
 
-            var sector = await db.ScalarAsync<string>(
-                "CALL sp_habilitar_sector(@evento, @estadio, @sector)",
+            if (string.IsNullOrWhiteSpace(req.NombreEstadio))
+                return Results.BadRequest(new ApiError("El estadio es obligatorio."));
+            if (string.IsNullOrWhiteSpace(req.NombreSector))
+                return Results.BadRequest(new ApiError("El sector es obligatorio."));
+
+            await db.ExecuteAsync(
+                "INSERT INTO evento_sector(id_evento, nombre_estadio, nombre_sector) VALUES (@evento, @estadio, @sector)",
                 p =>
                 {
                     p.AddWithValue("evento", id);
-                    p.AddWithValue("estadio", req.NombreEstadio);
-                    p.AddWithValue("sector", req.NombreSector);
+                    p.AddWithValue("estadio", req.NombreEstadio.Trim());
+                    p.AddWithValue("sector", req.NombreSector.Trim());
                 });
 
+            var sector = req.NombreSector.Trim();
             return Results.Created($"/eventos/{id}/sectores/{sector}",
                 new { idEvento = id, nombreEstadio = req.NombreEstadio, nombreSector = sector });
         });
@@ -86,7 +100,7 @@ public static class EventosEndpoints
                     if (!r.IsDBNull(7))
                         evento.SectoresHabilitados.Add(r.GetString(7));
 
-                    return 0; // el mapeo acumula en el diccionario; el valor no se usa
+                    return 0;
                 });
 
             return Results.Ok(eventos.Values);

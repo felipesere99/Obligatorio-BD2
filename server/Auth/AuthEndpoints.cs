@@ -11,11 +11,19 @@ public static class AuthEndpoints
         app.MapPost("/login", async (LoginRequest req, Db db) =>
         {
             var rows = await db.QueryAsync(
-                "CALL sp_login(@doc)",
+                """
+                SELECT documento, 'administrador'   AS rol, nombre FROM administrador   WHERE documento = @doc
+                UNION ALL
+                SELECT documento, 'funcionario',           nombre FROM funcionario     WHERE documento = @doc
+                UNION ALL
+                SELECT documento, 'usuario_general',       nombre FROM usuario_general WHERE documento = @doc
+                """,
                 r => new UserSession(r.GetString(0), r.GetString(1), r.GetString(2)),
                 p => p.AddWithValue("doc", req.Documento));
 
-            // fn_login lanza excepción si no existe (la atrapa el middleware -> 400).
+            if (rows.Count == 0)
+                return Results.BadRequest(new ApiError("No existe un usuario con ese documento."));
+
             return Results.Ok(rows[0]);
         });
     }

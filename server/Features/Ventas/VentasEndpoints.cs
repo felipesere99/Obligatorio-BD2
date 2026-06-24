@@ -1,4 +1,4 @@
-using System.Text.Json;
+using MySqlConnector;
 using Server.Api.Auth;
 using Server.Api.Data;
 using Shared.Contracts;
@@ -16,24 +16,70 @@ public static class VentasEndpoints
             var (user, error) = ctx.Authorize(Roles.UsuarioGeneral);
             if (error is not null) return error;
 
-            // Serializamos los items con las claves que espera la función SQL.
-            var itemsJson = JsonSerializer.Serialize(req.Items.Select(i => new
-            {
-                id_evento = i.IdEvento,
-                estadio = i.Estadio,
-                sector = i.Sector,
-                fila = i.Fila,
-                asiento = i.Asiento,
-            }));
+            if (req.Items is null || req.Items.Count == 0)
+                return Results.BadRequest(new ApiError("La compra no tiene entradas."));
+            if (req.Items.Count > 5)
+                return Results.BadRequest(new ApiError("Una venta admite como máximo 5 entradas."));
 
-            var venta = await db.QuerySingleAsync(
-                "CALL sp_crear_venta(@comprador, @items)",
-                r => new VentaCreadaResponse(r.GetInt32(0), r.GetDecimal(1)),
-                p =>
+            // Verificar comisión vigente antes de abrir la transacción.
+            var comision = await db.QuerySingleAsync(
+                "SELECT id_comision, porcentaje FROM comision WHERE vigente_hasta IS NULL LIMIT 1",
+                r => new { Id = r.GetInt32(0), Pct = r.GetDecimal(1) });
+
+            if (comision is null)
+                return Results.BadRequest(new ApiError("No hay una comisión vigente."));
+
+            VentaCreadaResponse? venta = null;
+            await db.TransactionAsync(async (conn, ct) =>
+            {
+                // Calcular monto: suma de costos de cada sector × (1 + comisión%).
+                decimal subtotal = 0;
+                foreach (var item in req.Items)
                 {
-                    p.AddWithValue("comprador", user!.Documento);
-                    p.AddWithValue("items", itemsJson);
-                });
+                    await using var costoCmd = conn.CreateCommand();
+                    costoCmd.CommandText =
+                        "SELECT costo_entrada FROM sector WHERE nombre_estadio = @estadio AND nombre = @sector";
+                    costoCmd.Parameters.AddWithValue("estadio", item.Estadio);
+                    costoCmd.Parameters.AddWithValue("sector", item.Sector);
+                    var costo = await costoCmd.ExecuteScalarAsync(ct);
+                    subtotal += costo is null or DBNull ? 0m : (decimal)costo;
+                }
+                var montoTotal = Math.Round(subtotal * (1 + comision.Pct / 100), 2);
+
+                // Insertar cabecera de la venta.
+                await using var ventaCmd = conn.CreateCommand();
+                ventaCmd.CommandText = """
+                    INSERT INTO venta(monto_total, estado, doc_comprador, id_comision)
+                    VALUES (@monto, 'pendiente', @comprador, @comision)
+                    """;
+                ventaCmd.Parameters.AddWithValue("monto", montoTotal);
+                ventaCmd.Parameters.AddWithValue("comprador", user!.Documento);
+                ventaCmd.Parameters.AddWithValue("comision", comision.Id);
+                await ventaCmd.ExecuteNonQueryAsync(ct);
+                var nroVenta = (int)ventaCmd.LastInsertedId;
+
+                // Insertar una entrada por item; los triggers validan sector habilitado,
+                // capacidad y máx 5 por venta.
+                foreach (var item in req.Items)
+                {
+                    await using var entradaCmd = conn.CreateCommand();
+                    entradaCmd.CommandText = """
+                        INSERT INTO entrada(nro_venta, id_evento, nombre_estadio, nombre_sector,
+                                           fila, asiento, doc_propietario)
+                        VALUES (@nroVenta, @evento, @estadio, @sector, @fila, @asiento, @propietario)
+                        """;
+                    entradaCmd.Parameters.AddWithValue("nroVenta", nroVenta);
+                    entradaCmd.Parameters.AddWithValue("evento", item.IdEvento);
+                    entradaCmd.Parameters.AddWithValue("estadio", item.Estadio);
+                    entradaCmd.Parameters.AddWithValue("sector", item.Sector);
+                    entradaCmd.Parameters.AddWithValue("fila", (object?)item.Fila ?? DBNull.Value);
+                    entradaCmd.Parameters.AddWithValue("asiento", (object?)item.Asiento ?? DBNull.Value);
+                    entradaCmd.Parameters.AddWithValue("propietario", user!.Documento);
+                    await entradaCmd.ExecuteNonQueryAsync(ct);
+                }
+
+                venta = new VentaCreadaResponse(nroVenta, montoTotal);
+            });
 
             return Results.Created($"/ventas/{venta!.NroVenta}", venta);
         });
