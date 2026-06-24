@@ -12,6 +12,7 @@ import { Comprar } from "./features/Comprar";
 import { MisCompras } from "./features/MisCompras";
 import { Asignaciones } from "./features/Asignaciones";
 import { Reportes } from "./features/Reportes";
+import { Validar } from "./features/Validar";
 
 interface Tab {
   id: string;
@@ -33,7 +34,9 @@ const TABS: Record<Rol, Tab[]> = {
     { id: "comprar", label: "Comprar entradas", render: () => <Comprar /> },
     { id: "compras", label: "Mis compras", render: () => <MisCompras /> },
   ],
-  funcionario: [],
+  funcionario: [
+    { id: "validar", label: "Validar ingreso", render: () => <Validar /> },
+  ],
 };
 
 export default function App() {
