@@ -3,6 +3,7 @@ import { api } from "../lib/api";
 import { useSession } from "../lib/session";
 import type { Compra, Entrada } from "../lib/types";
 import { Banner, Card, Loading, errorMessage, useAsync } from "../components/ui";
+import { EntradaQr } from "./EntradaQr";
 
 export function MisCompras() {
   const { session } = useSession();
@@ -15,6 +16,7 @@ export function MisCompras() {
   const [sel, setSel] = useState<number | null>(null);
   const [entradas, setEntradas] = useState<Entrada[] | null>(null);
   const [entErr, setEntErr] = useState<string | null>(null);
+  const [qrEntrada, setQrEntrada] = useState<number | null>(null);
 
   async function verEntradas(nro: number) {
     if (sel === nro) {
@@ -64,6 +66,16 @@ export function MisCompras() {
                             <li key={e.nroEntrada}>
                               #{e.nroEntrada} · evento {e.idEvento} · {e.nombreEstadio}/{e.nombreSector}
                               {(e.fila || e.asiento) && ` (fila ${e.fila ?? "-"}, asiento ${e.asiento ?? "-"})`}
+                              {" "}
+                              <button
+                                className="link"
+                                onClick={() =>
+                                  setQrEntrada((prev) => (prev === e.nroEntrada ? null : e.nroEntrada))
+                                }
+                              >
+                                {qrEntrada === e.nroEntrada ? "ocultar QR" : "mostrar QR"}
+                              </button>
+                              {qrEntrada === e.nroEntrada && <EntradaQr nroEntrada={e.nroEntrada} />}
                             </li>
                           ))}
                         </ul>

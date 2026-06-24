@@ -135,6 +135,46 @@ export interface ReporteSectorVentas {
   totalVentas: number;
 }
 
+export interface Qr {
+  idCodigo: number;
+  nroEntrada: number;
+  codigo: string;
+  generadoEn: string;
+  expiraEnSegundos: number;
+}
+
+export interface Dispositivo {
+  idDispositivo: number;
+}
+
+export interface Validacion {
+  nroEntrada: number;
+  idEvento: number;
+  nombreEstadio: string;
+  nombreSector: string;
+  fechaHora: string;
+  docFuncionario: string;
+  idDispositivo: number;
+}
+
+export interface Transferencia {
+  nroEntrada: number;
+  fechaHora: string;
+  contador: number;
+  docEmisor: string;
+  docReceptor: string;
+  estado: "pendiente" | "aceptada" | "rechazada" | "cancelada";
+}
+
+export interface EntradaTenencia {
+  nroEntrada: number;
+  idEvento: number;
+  nombreEstadio: string;
+  nombreSector: string;
+  fila: string | null;
+  asiento: string | null;
+}
+
 export interface ReporteComprador {
   documento: string;
   nombre: string;

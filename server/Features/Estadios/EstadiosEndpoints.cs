@@ -57,10 +57,10 @@ public static class EstadiosEndpoints
                 new SectorResponse(sector, req.Capacidad, req.CostoEntrada));
         });
 
-        // GET /estadios (admin) -> lista los estadios con sus sectores.
+        // GET /estadios (admin, usuario_general) -> lista los estadios con sus sectores.
         app.MapGet("/estadios", async (HttpContext ctx, Db db) =>
         {
-            var (_, error) = ctx.Authorize(Roles.Administrador);
+            var (_, error) = ctx.Authorize(Roles.Administrador, Roles.UsuarioGeneral);
             if (error is not null) return error;
 
             var estadios = new Dictionary<string, EstadioResponse>();

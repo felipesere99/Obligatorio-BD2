@@ -13,6 +13,9 @@ import { MisCompras } from "./features/MisCompras";
 import { Asignaciones } from "./features/Asignaciones";
 import { Dispositivos } from "./features/Dispositivos";
 import { Reportes } from "./features/Reportes";
+import { Validar } from "./features/Validar";
+import { MisEntradas } from "./features/MisEntradas";
+import { Transferencias } from "./features/Transferencias";
 
 interface Tab {
   id: string;
@@ -34,8 +37,12 @@ const TABS: Record<Rol, Tab[]> = {
   usuario_general: [
     { id: "comprar", label: "Comprar entradas", render: () => <Comprar /> },
     { id: "compras", label: "Mis compras", render: () => <MisCompras /> },
+    { id: "entradas", label: "Mis entradas", render: () => <MisEntradas /> },
+    { id: "transferencias", label: "Transferencias", render: () => <Transferencias /> },
   ],
-  funcionario: [],
+  funcionario: [
+    { id: "validar", label: "Validar ingreso", render: () => <Validar /> },
+  ],
 };
 
 export default function App() {
