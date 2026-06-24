@@ -29,6 +29,14 @@ export interface UsuarioGeneral {
   estadoVerificacion: boolean;
 }
 
+export interface Funcionario {
+  documento: string;
+  nombre: string;
+  apellido: string;
+  correo: string;
+  nroLegajo: string;
+}
+
 export interface Equipo {
   pais: string;
   nombre: string;
@@ -91,4 +99,12 @@ export interface Entrada {
   nombreSector: string;
   fila: string | null;
   asiento: string | null;
+}
+
+export interface Asignacion {
+  docFuncionario: string;
+  nombreFuncionario: string;
+  idEvento: number;
+  nombreEstadio: string;
+  nombreSector: string;
 }
