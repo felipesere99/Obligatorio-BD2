@@ -108,3 +108,29 @@ export interface Asignacion {
   nombreEstadio: string;
   nombreSector: string;
 }
+
+export interface ReporteEventoVentas {
+  idEvento: number;
+  nombreEvento: string;
+  nombreEstadio: string;
+  cantidadEntradas: number;
+  totalVentas: number;
+}
+
+export interface ReporteSectorVentas {
+  idEvento: number;
+  nombreEvento: string;
+  nombreEstadio: string;
+  nombreSector: string;
+  cantidadEntradas: number;
+  totalVentas: number;
+}
+
+export interface ReporteComprador {
+  documento: string;
+  nombre: string;
+  apellido: string;
+  cantidadCompras: number;
+  cantidadEntradas: number;
+  totalGastado: number;
+}

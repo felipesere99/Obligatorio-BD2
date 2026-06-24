@@ -11,6 +11,7 @@ import { ComisionPanel } from "./features/Comision";
 import { Comprar } from "./features/Comprar";
 import { MisCompras } from "./features/MisCompras";
 import { Asignaciones } from "./features/Asignaciones";
+import { Reportes } from "./features/Reportes";
 
 interface Tab {
   id: string;
@@ -26,6 +27,7 @@ const TABS: Record<Rol, Tab[]> = {
     { id: "eventos", label: "Eventos", render: () => <Eventos /> },
     { id: "comision", label: "Comisión", render: () => <ComisionPanel /> },
     { id: "asignaciones", label: "Asignaciones", render: () => <Asignaciones /> },
+    { id: "reportes", label: "Reportes", render: () => <Reportes /> },
   ],
   usuario_general: [
     { id: "comprar", label: "Comprar entradas", render: () => <Comprar /> },
