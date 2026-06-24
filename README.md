@@ -1,6 +1,25 @@
 # Obligatorio BD2
 
-Sistema de ticketing — esqueleto inicial.
+Sistema de ticketing.
+
+## Arquitectura de la base
+
+La lógica vive en **triggers** (reglas duras en MySQL) y en **C#** (validaciones
+y orquestación en el server). No hay stored procedures ni functions: el usuario
+de la UCU (`xr_g4_admin`) solo tiene `SELECT`, `INSERT`, `UPDATE`, `DELETE`,
+`CREATE`, `DROP`, `REFERENCES`, `INDEX`, `ALTER` y `TRIGGER` — sin
+`CREATE ROUTINE`, `ALTER ROUTINE` ni `EXECUTE`.
+
+Scripts en `db/init/` (mismo esquema local y UCU):
+
+| Archivo | Contenido |
+|---------|-----------|
+| `01_schema.sql` | Tablas, constraints e índices |
+| `02_triggers.sql` | Triggers de negocio (`SIGNAL 45000` → HTTP 400) |
+| `04_seed.sql` | Datos de prueba |
+
+Los endpoints usan SQL directo y transacciones en C#; los triggers siguen
+validando capacidad, sectores habilitados, máximo de entradas, etc.
 
 ## Requisitos
 
@@ -90,8 +109,9 @@ dotnet run --project server
 ```
 
 > La contraseña se cambia en el primer login; no la pongas en el repo (va en el
-> `.env`, que está en `.gitignore`). Los scripts de `db/init/` se pueden aplicar
-> a esa base con DataGrip (soporta `DELIMITER`) o con el cliente `mysql`.
+> `.env`, que está en `.gitignore`). Para aplicar `db/init/` en la UCU, ejecutá
+> `01_schema.sql`, `02_triggers.sql` y `04_seed.sql` en ese orden (DataGrip o
+> cliente `mysql`; los triggers usan `DELIMITER`). No hace falta `CREATE ROUTINE`.
 
 ## Login y datos de prueba
 
