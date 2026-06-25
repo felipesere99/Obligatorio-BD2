@@ -11,37 +11,64 @@ public static class UsuariosEndpoints
         // POST /usuarios/generales (público) -> registra un usuario general.
         app.MapPost("/usuarios/generales", async (RegistrarUsuarioRequest req, Db db) =>
         {
-            if (string.IsNullOrWhiteSpace(req.Documento))
+            var documento = req.Documento?.Trim() ?? string.Empty;
+            var nombre = req.Nombre?.Trim() ?? string.Empty;
+            var apellido = req.Apellido?.Trim() ?? string.Empty;
+            var correo = req.Correo?.Trim() ?? string.Empty;
+            var contrasenia = req.Contrasenia ?? string.Empty;
+
+            if (string.IsNullOrWhiteSpace(documento))
                 return Results.BadRequest(new ApiError("El documento es obligatorio."));
-            if (string.IsNullOrWhiteSpace(req.Nombre))
+            if (string.IsNullOrWhiteSpace(nombre))
                 return Results.BadRequest(new ApiError("El nombre es obligatorio."));
-            if (string.IsNullOrWhiteSpace(req.Apellido))
+            if (string.IsNullOrWhiteSpace(apellido))
                 return Results.BadRequest(new ApiError("El apellido es obligatorio."));
-            if (string.IsNullOrWhiteSpace(req.Correo))
+            if (string.IsNullOrWhiteSpace(correo))
                 return Results.BadRequest(new ApiError("El correo es obligatorio."));
+            if (string.IsNullOrWhiteSpace(contrasenia))
+                return Results.BadRequest(new ApiError("La contraseña es obligatoria."));
+            if (contrasenia.Length < 8)
+                return Results.BadRequest(new ApiError("La contraseña debe tener al menos 8 caracteres."));
 
-            await db.ExecuteAsync(
-                """
-                INSERT INTO usuario_general(
-                    documento, nombre, apellido, correo,
-                    dir_pais, dir_localidad, dir_calle, dir_numero, dir_codigo_postal
-                ) VALUES (@doc, @nombre, @apellido, @correo, @pais, @localidad, @calle, @numero, @cp)
-                """,
-                p =>
+            var hash = PasswordHasher.Hash(contrasenia);
+
+            await db.TransactionAsync(async (conn, ct) =>
+            {
+                await using (var userCmd = conn.CreateCommand())
                 {
-                    p.AddWithValue("doc", req.Documento.Trim());
-                    p.AddWithValue("nombre", req.Nombre.Trim());
-                    p.AddWithValue("apellido", req.Apellido.Trim());
-                    p.AddWithValue("correo", req.Correo.Trim());
-                    p.AddWithValue("pais", (object?)req.DirPais ?? DBNull.Value);
-                    p.AddWithValue("localidad", (object?)req.DirLocalidad ?? DBNull.Value);
-                    p.AddWithValue("calle", (object?)req.DirCalle ?? DBNull.Value);
-                    p.AddWithValue("numero", (object?)req.DirNumero ?? DBNull.Value);
-                    p.AddWithValue("cp", (object?)req.DirCodigoPostal ?? DBNull.Value);
-                });
+                    userCmd.CommandText =
+                        """
+                        INSERT INTO usuario_general(
+                            documento, nombre, apellido, correo,
+                            dir_pais, dir_localidad, dir_calle, dir_numero, dir_codigo_postal
+                        ) VALUES (@doc, @nombre, @apellido, @correo, @pais, @localidad, @calle, @numero, @cp)
+                        """;
+                    userCmd.Parameters.AddWithValue("doc", documento);
+                    userCmd.Parameters.AddWithValue("nombre", nombre);
+                    userCmd.Parameters.AddWithValue("apellido", apellido);
+                    userCmd.Parameters.AddWithValue("correo", correo);
+                    userCmd.Parameters.AddWithValue("pais", (object?)req.DirPais ?? DBNull.Value);
+                    userCmd.Parameters.AddWithValue("localidad", (object?)req.DirLocalidad ?? DBNull.Value);
+                    userCmd.Parameters.AddWithValue("calle", (object?)req.DirCalle ?? DBNull.Value);
+                    userCmd.Parameters.AddWithValue("numero", (object?)req.DirNumero ?? DBNull.Value);
+                    userCmd.Parameters.AddWithValue("cp", (object?)req.DirCodigoPostal ?? DBNull.Value);
+                    await userCmd.ExecuteNonQueryAsync(ct);
+                }
 
-            var doc = req.Documento.Trim();
-            return Results.Created($"/usuarios/generales/{doc}", new { documento = doc });
+                await using (var credCmd = conn.CreateCommand())
+                {
+                    credCmd.CommandText =
+                        """
+                        INSERT INTO credencial(documento, hash)
+                        VALUES (@doc, @hash)
+                        """;
+                    credCmd.Parameters.AddWithValue("doc", documento);
+                    credCmd.Parameters.AddWithValue("hash", hash);
+                    await credCmd.ExecuteNonQueryAsync(ct);
+                }
+            });
+
+            return Results.Created($"/usuarios/generales/{documento}", new { documento });
         });
 
         // GET /usuarios/generales (admin) -> lista todos los usuarios generales.

@@ -1,7 +1,7 @@
 namespace Shared.Contracts;
 
-/// <summary>Login mínimo: se identifica por documento (el esquema no tiene password).</summary>
-public record LoginRequest(string Documento);
+/// <summary>Login por documento y contraseña.</summary>
+public record LoginRequest(string Documento, string Contrasenia);
 
 /// <summary>Sesión devuelta por el server; el client la reenvía en cada request.</summary>
 public record UserSession(string Documento, string Rol, string Nombre);
