@@ -6,7 +6,7 @@ const STORAGE_KEY = "ticketing.session";
 
 interface SessionContextValue {
   session: UserSession | null;
-  login: (documento: string) => Promise<UserSession>;
+  login: (documento: string, contrasenia: string) => Promise<UserSession>;
   logout: () => void;
 }
 
@@ -29,8 +29,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setApiSession(session);
   }, [session]);
 
-  async function login(documento: string) {
-    const user = await api.post<UserSession>("/login", { documento });
+  async function login(documento: string, contrasenia: string) {
+    const user = await api.post<UserSession>("/login", { documento, contrasenia });
     localStorage.setItem(STORAGE_KEY, JSON.stringify(user));
     setApiSession(user);
     setSessionState(user);

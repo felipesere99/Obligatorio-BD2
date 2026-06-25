@@ -9,11 +9,17 @@ export interface UserSession {
   nombre: string;
 }
 
+export interface LoginRequest {
+  documento: string;
+  contrasenia: string;
+}
+
 export interface RegistrarUsuarioRequest {
   documento: string;
   nombre: string;
   apellido: string;
   correo: string;
+  contrasenia: string;
   dirPais?: string | null;
   dirLocalidad?: string | null;
   dirCalle?: string | null;
