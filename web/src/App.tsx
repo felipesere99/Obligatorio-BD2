@@ -11,6 +11,7 @@ import { ComisionPanel } from "./features/Comision";
 import { Comprar } from "./features/Comprar";
 import { MisCompras } from "./features/MisCompras";
 import { Asignaciones } from "./features/Asignaciones";
+import { Dispositivos } from "./features/Dispositivos";
 import { Reportes } from "./features/Reportes";
 import { Validar } from "./features/Validar";
 import { MisEntradas } from "./features/MisEntradas";
@@ -30,6 +31,7 @@ const TABS: Record<Rol, Tab[]> = {
     { id: "eventos", label: "Eventos", render: () => <Eventos /> },
     { id: "comision", label: "Comisión", render: () => <ComisionPanel /> },
     { id: "asignaciones", label: "Asignaciones", render: () => <Asignaciones /> },
+    { id: "dispositivos", label: "Dispositivos", render: () => <Dispositivos /> },
     { id: "reportes", label: "Reportes", render: () => <Reportes /> },
   ],
   usuario_general: [

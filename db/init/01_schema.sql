@@ -11,7 +11,11 @@
 
 -- ---------- Dispositivos de validación ----------
 CREATE TABLE dispositivo (
-    id_dispositivo INT AUTO_INCREMENT PRIMARY KEY
+    id_dispositivo INT AUTO_INCREMENT PRIMARY KEY,
+    nro_serie      VARCHAR(80)  NOT NULL UNIQUE,
+    marca          VARCHAR(80)  NOT NULL,
+    modelo         VARCHAR(80)  NOT NULL,
+    habilitado     BOOLEAN      NOT NULL DEFAULT TRUE
 );
 
 -- ---------- Rol: Administrador ----------

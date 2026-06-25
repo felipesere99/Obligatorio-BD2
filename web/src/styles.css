@@ -126,6 +126,33 @@ legend { color: var(--muted); font-size: 0.85rem; padding: 0 0.4rem; }
 .grid-form { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.85rem; align-items: end; }
 .grid-form button { grid-column: 1 / -1; }
 .row { display: flex; gap: 0.75rem; justify-content: flex-end; }
+.check-field {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.45rem;
+  color: var(--text);
+}
+.check-field input { width: 1rem; height: 1rem; }
+.chip-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.2rem 0.45rem 0.2rem 0.6rem;
+  background: var(--surface-2);
+}
+.chip-button {
+  width: 1.3rem;
+  height: 1.3rem;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+}
+.chip-button:hover:not(:disabled) { background: var(--border); color: var(--text); }
 
 /* ---------- Tables ---------- */
 table { width: 100%; border-collapse: collapse; margin-top: 0.5rem; }

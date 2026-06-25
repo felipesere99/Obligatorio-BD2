@@ -109,6 +109,15 @@ export interface Asignacion {
   nombreSector: string;
 }
 
+export interface Dispositivo {
+  idDispositivo: number;
+  nroSerie: string;
+  marca: string;
+  modelo: string;
+  habilitado: boolean;
+  funcionariosAsignados: string[];
+}
+
 export interface ReporteEventoVentas {
   idEvento: number;
   nombreEvento: string;

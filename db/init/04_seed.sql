@@ -33,7 +33,8 @@ INSERT INTO administrador(documento, nombre, apellido, correo, cargo) VALUES
 -- ---------- Funcionario + dispositivo + asignación ----------
 INSERT INTO funcionario(documento, nombre, apellido, correo, nro_legajo) VALUES
  ('FUN-1','Fabián','Validez','funcio@ticketing.uy','LEG-001');
-INSERT INTO dispositivo () VALUES ();   -- id_dispositivo = 1
+INSERT INTO dispositivo(nro_serie, marca, modelo, habilitado) VALUES
+ ('VAL-0001','Zebra','TC21', TRUE);   -- id_dispositivo = 1
 INSERT INTO funcionario_dispositivo(doc_funcionario, id_dispositivo) VALUES
  ('FUN-1', 1);
 INSERT INTO funcionario_asignado(doc_funcionario, nombre_estadio, nombre_sector, id_evento) VALUES
