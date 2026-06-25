@@ -105,5 +105,46 @@ public static class EventosEndpoints
 
             return Results.Ok(eventos.Values);
         });
+
+        // GET /eventos/{idEvento}/disponibilidad (admin, usuario_general) -> cupos por sector habilitado.
+        app.MapGet("/eventos/{idEvento:int}/disponibilidad", async (int idEvento, HttpContext ctx, Db db) =>
+        {
+            var (_, error) = ctx.Authorize(Roles.Administrador, Roles.UsuarioGeneral);
+            if (error is not null) return error;
+
+            var rows = await db.QueryAsync(
+                """
+                SELECT es.nombre_sector,
+                       es.nombre_estadio,
+                       s.capacidad,
+                       COUNT(e.nro_entrada) AS vendidas,
+                       s.costo_entrada
+                FROM evento_sector es
+                JOIN sector s
+                  ON s.nombre_estadio = es.nombre_estadio AND s.nombre = es.nombre_sector
+                LEFT JOIN entrada e
+                  ON e.id_evento = es.id_evento
+                 AND e.nombre_estadio = es.nombre_estadio
+                 AND e.nombre_sector = es.nombre_sector
+                WHERE es.id_evento = @idEvento
+                GROUP BY es.nombre_sector, es.nombre_estadio, s.capacidad, s.costo_entrada
+                ORDER BY es.nombre_sector
+                """,
+                r =>
+                {
+                    var capacidad = r.GetInt32(2);
+                    var vendidas = (int)r.GetInt64(3);
+                    return new SectorDisponibilidadResponse(
+                        r.GetString(0),
+                        r.GetString(1),
+                        capacidad,
+                        vendidas,
+                        capacidad - vendidas,
+                        r.GetDecimal(4));
+                },
+                p => p.AddWithValue("idEvento", idEvento));
+
+            return Results.Ok(rows);
+        });
     }
 }

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { api } from "../lib/api";
-import type { CompraItem, Estadio, Evento, VentaCreada } from "../lib/types";
+import type { CompraItem, Evento, SectorDisponibilidad, VentaCreada } from "../lib/types";
 import {
   Banner,
   Card,
@@ -13,11 +13,11 @@ import {
 } from "../components/ui";
 
 const MAX_ITEMS = 5;
+const POCOS_CUPOS = 5;
 
 export function Comprar() {
   const toast = useToast();
   const eventos = useAsync(() => api.get<Evento[]>("/eventos"));
-  const estadios = useAsync(() => api.get<Estadio[]>("/estadios"));
 
   const [items, setItems] = useState<CompraItem[]>([]);
   const [idEvento, setIdEvento] = useState("");
@@ -27,9 +27,18 @@ export function Comprar() {
   const [err, setErr] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const disponibilidad = useAsync(
+    () =>
+      idEvento
+        ? api.get<SectorDisponibilidad[]>(`/eventos/${idEvento}/disponibilidad`)
+        : Promise.resolve([]),
+    [idEvento],
+  );
+
   const evento = eventos.data?.find((e) => String(e.idEvento) === idEvento);
-  const estadio = estadios.data?.find((es) => es.nombre === evento?.nombreEstadio);
-  const sectores = estadio?.sectores.filter((s) => evento?.sectoresHabilitados.includes(s.nombre)) ?? [];
+  const sectores = disponibilidad.data ?? [];
+  const sectorSel = sectores.find((s) => s.nombreSector === sector);
+  const sectorAgotado = sectorSel?.disponibles === 0;
 
   function resetDraft() {
     setIdEvento("");
@@ -78,8 +87,8 @@ export function Comprar() {
     return ev ? `#${ev.idEvento} — ${ev.nombre}` : String(id);
   }
 
-  const loading = eventos.loading || estadios.loading;
-  const loadErr = eventos.error ?? estadios.error;
+  const loading = eventos.loading;
+  const loadErr = eventos.error;
 
   return (
     <div className="stack">
@@ -119,25 +128,43 @@ export function Comprar() {
                 value={sector}
                 onChange={(e) => setSector(e.target.value)}
                 required
-                disabled={!evento || sectores.length === 0}
+                disabled={!evento || disponibilidad.loading || sectores.length === 0}
               >
                 <option value="">
                   {!evento
                     ? "— elegir evento primero —"
-                    : sectores.length === 0
-                      ? "— sin sectores habilitados —"
-                      : "— elegir sector —"}
+                    : disponibilidad.loading
+                      ? "— cargando sectores —"
+                      : sectores.length === 0
+                        ? "— sin sectores habilitados —"
+                        : "— elegir sector —"}
                 </option>
                 {sectores.map((s) => (
-                  <option key={s.nombre} value={s.nombre}>
-                    {s.nombre} — ${s.costoEntrada}
+                  <option
+                    key={s.nombreSector}
+                    value={s.nombreSector}
+                    disabled={s.disponibles === 0}
+                  >
+                    {s.nombreSector} — ${s.costoEntrada} —{" "}
+                    {s.disponibles === 0 ? "Agotado" : `${s.disponibles} disponibles`}
                   </option>
                 ))}
               </select>
+              {disponibilidad.error && (
+                <span className="muted small">{disponibilidad.error}</span>
+              )}
+              {sectorSel && sectorSel.disponibles > 0 && sectorSel.disponibles <= POCOS_CUPOS && (
+                <span className="muted small">
+                  Quedan {sectorSel.disponibles} entradas en este sector.
+                </span>
+              )}
             </label>
             <Field label="Fila (opcional)" value={fila} onChange={(e) => setFila(e.target.value)} disabled={!evento} />
             <Field label="Asiento (opcional)" value={asiento} onChange={(e) => setAsiento(e.target.value)} disabled={!evento} />
-            <button type="submit" disabled={items.length >= MAX_ITEMS || !evento || !sector}>
+            <button
+              type="submit"
+              disabled={items.length >= MAX_ITEMS || !evento || !sector || sectorAgotado}
+            >
               Agregar ítem
             </button>
           </form>
