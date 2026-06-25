@@ -251,6 +251,16 @@ CREATE TABLE funcionario_asignado (
         REFERENCES sector(nombre_estadio, nombre)
 );
 
+-- ---------- Credenciales (contraseñas) ----------
+-- Tabla centralizada para los 3 roles. El documento no tiene FK declarativa
+-- (igual que telefono_usuario) porque puede pertenecer a cualquiera de las
+-- tres tablas de rol. El hash es BCrypt (~60 chars); 100 da margen holgado.
+CREATE TABLE credencial (
+    documento      VARCHAR(30)  PRIMARY KEY,
+    hash           VARCHAR(100) NOT NULL,
+    actualizado_en DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+);
+
 -- ---------- Índices de apoyo ----------
 -- En MySQL/InnoDB cada columna de FK ya recibe un índice automático, así que
 -- los índices de apoyo del modelo original (por evento, venta, comprador,
