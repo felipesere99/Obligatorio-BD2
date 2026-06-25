@@ -25,3 +25,12 @@ public record EventoResponse(
     string? PaisVisitante,
     string NombreEstadio,
     List<string> SectoresHabilitados);
+
+/// <summary>Disponibilidad de entradas por sector habilitado en un evento.</summary>
+public record SectorDisponibilidadResponse(
+    string NombreSector,
+    string NombreEstadio,
+    int Capacidad,
+    int Vendidas,
+    int Disponibles,
+    decimal CostoEntrada);

@@ -71,6 +71,15 @@ export interface Evento {
   sectoresHabilitados: string[];
 }
 
+export interface SectorDisponibilidad {
+  nombreSector: string;
+  nombreEstadio: string;
+  capacidad: number;
+  vendidas: number;
+  disponibles: number;
+  costoEntrada: number;
+}
+
 export interface Comision {
   idComision: number;
   porcentaje: number;
