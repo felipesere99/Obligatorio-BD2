@@ -11,6 +11,7 @@ const DEMO = [
 export function Login({ onRegister }: { onRegister: () => void }) {
   const { login } = useSession();
   const [documento, setDocumento] = useState("");
+  const [contrasenia, setContrasenia] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -19,7 +20,7 @@ export function Login({ onRegister }: { onRegister: () => void }) {
     setError(null);
     setBusy(true);
     try {
-      await login(documento.trim());
+      await login(documento.trim(), contrasenia);
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -34,9 +35,6 @@ export function Login({ onRegister }: { onRegister: () => void }) {
           <img className="brand-logo brand-logo-lg" src="/logo.png" alt="" aria-hidden="true" />
           <h1 style={{ margin: 0 }}>Ticketing</h1>
         </div>
-        <p className="muted" style={{ textAlign: "center" }}>
-          Ingresá con tu documento (no hay contraseña).
-        </p>
         <form onSubmit={submit}>
           <Field
             label="Documento"
@@ -44,9 +42,17 @@ export function Login({ onRegister }: { onRegister: () => void }) {
             onChange={(e) => setDocumento(e.target.value)}
             placeholder="ej. UG-1"
             autoFocus
+            required
+          />
+          <Field
+            label="Contraseña"
+            type="password"
+            value={contrasenia}
+            onChange={(e) => setContrasenia(e.target.value)}
+            required
           />
           {error && <Banner kind="error">{error}</Banner>}
-          <button type="submit" disabled={busy || !documento.trim()}>
+          <button type="submit" disabled={busy || !documento.trim() || !contrasenia}>
             {busy ? "Ingresando…" : "Ingresar"}
           </button>
         </form>
@@ -59,11 +65,18 @@ export function Login({ onRegister }: { onRegister: () => void }) {
         </p>
 
         <details className="demo">
-          <summary>Usuarios de prueba</summary>
+          <summary>Usuarios de prueba (contraseña: demo1234)</summary>
           <ul>
             {DEMO.map(([doc, rol]) => (
               <li key={doc}>
-                <button className="link" type="button" onClick={() => setDocumento(doc)}>
+                <button
+                  className="link"
+                  type="button"
+                  onClick={() => {
+                    setDocumento(doc);
+                    setContrasenia("demo1234");
+                  }}
+                >
                   {doc}
                 </button>{" "}
                 — {rol}

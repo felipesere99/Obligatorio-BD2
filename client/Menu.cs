@@ -383,6 +383,7 @@ public static class Menu
         var nombre = Prompt("Nombre");
         var apellido = Prompt("Apellido");
         var correo = Prompt("Correo");
+        var contrasenia = Prompt("Contraseña (mín. 8 caracteres)");
         Console.WriteLine("Dirección (opcional, Enter para omitir):");
         var pais = PromptOptional("  País");
         var localidad = PromptOptional("  Localidad");
@@ -391,7 +392,7 @@ public static class Menu
         var cp = PromptOptional("  Código postal");
 
         var req = new RegistrarUsuarioRequest(
-            documento, nombre, apellido, correo, pais, localidad, calle, numero, cp);
+            documento, nombre, apellido, correo, contrasenia, pais, localidad, calle, numero, cp);
         var creado = await api.PostAsync<UsuarioRegistradoResponse>("/usuarios/generales", req);
         Console.WriteLine($"Usuario {creado.Documento} registrado. Ya podés iniciar sesión con ese documento.");
     }

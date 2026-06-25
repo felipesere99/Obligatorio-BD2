@@ -20,9 +20,9 @@ public sealed class ApiClient
     public UserSession? Session { get; private set; }
     public bool IsLoggedIn => Session is not null;
 
-    public async Task<UserSession> LoginAsync(string documento)
+    public async Task<UserSession> LoginAsync(string documento, string contrasenia)
     {
-        Session = await PostAsync<UserSession>("/login", new LoginRequest(documento));
+        Session = await PostAsync<UserSession>("/login", new LoginRequest(documento, contrasenia));
         return Session;
     }
 

@@ -6,6 +6,7 @@ public record RegistrarUsuarioRequest(
     string Nombre,
     string Apellido,
     string Correo,
+    string Contrasenia,
     string? DirPais = null,
     string? DirLocalidad = null,
     string? DirCalle = null,

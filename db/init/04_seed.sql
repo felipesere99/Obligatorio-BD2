@@ -62,3 +62,13 @@ INSERT INTO entrada(nro_venta, id_evento, nombre_estadio, nombre_sector, fila, a
 INSERT INTO codigo_qr(nro_entrada, codigo) VALUES
  (1,'QR-ENTRADA-1-INIT'),
  (2,'QR-ENTRADA-2-INIT');
+
+-- ---------- Credenciales demo (contraseña: "demo1234") ----------
+-- Hashes BCrypt work-factor 11 generados con BCrypt.Net-Next 4.0.3.
+-- Para regenerar: BCrypt.Net.BCrypt.HashPassword("demo1234", workFactor: 11)
+INSERT INTO credencial(documento, hash) VALUES
+ ('ADM-1', '$2a$11$357dpmKEroxarnRnJ7ot/OYJH92n9/oZMwID3bpl.zC9.65wfc7Z.'),
+ ('FUN-1', '$2a$11$tggzvxj6X5vztN9Z2WL.6eMC0Ju1e51hTxeTtWIOIUpoIdnUMF0Yq'),
+ ('UG-1',  '$2a$11$uD/MQP7ROzF5km//TtdgG.vidXqseBSGQMQS7Fz5CbhJPUccv.hsK'),
+ ('UG-2',  '$2a$11$xc44KY1m.lENZHWcTqr4GO1hOnf01T./INTmJgineQeHd.6iGXe3W'),
+ ('UG-3',  '$2a$11$4evChi/DxAgmRETTi0H7Uucn.5mDWq52xnR5I/jqTKxjlOYeeV3v6');

@@ -82,7 +82,9 @@ static async Task<bool> TryLogin(ApiClient api)
 
     try
     {
-        var s = await api.LoginAsync(doc.Trim());
+        Console.Write("Contraseña: ");
+        var contrasenia = Console.ReadLine() ?? string.Empty;
+        var s = await api.LoginAsync(doc.Trim(), contrasenia);
         Console.WriteLine($"Bienvenido, {s.Nombre} ({s.Rol}).");
     }
     catch (ApiException ex)
