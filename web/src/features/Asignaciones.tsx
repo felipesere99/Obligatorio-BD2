@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../lib/api";
 import type { Asignacion, Evento, Funcionario } from "../lib/types";
-import { Banner, Card, Loading, errorMessage, useAsync } from "../components/ui";
+import { Banner, Card, EmptyState, Skeleton, errorMessage, useAsync, useToast } from "../components/ui";
 
 export function Asignaciones() {
   const asignaciones = useAsync(() => api.get<Asignacion[]>("/asignaciones"));
@@ -21,32 +21,34 @@ export function Asignaciones() {
       />
 
       <Card title="Asignaciones">
-        {(asignaciones.loading || funcionarios.loading || eventos.loading) && <Loading />}
+        {(asignaciones.loading || funcionarios.loading || eventos.loading) && <Skeleton rows={3} />}
         {asignaciones.error && <Banner kind="error">{asignaciones.error}</Banner>}
         {funcionarios.error && <Banner kind="error">{funcionarios.error}</Banner>}
         {eventos.error && <Banner kind="error">{eventos.error}</Banner>}
-        {asignaciones.data && asignaciones.data.length === 0 && <p className="muted">No hay asignaciones.</p>}
+        {asignaciones.data && asignaciones.data.length === 0 && <EmptyState icon="🧑‍✈️">No hay asignaciones.</EmptyState>}
         {asignaciones.data && asignaciones.data.length > 0 && (
-          <table>
-            <thead>
-              <tr>
-                <th>Funcionario</th>
-                <th>Evento</th>
-                <th>Estadio</th>
-                <th>Sector</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {asignaciones.data.map((a) => (
-                <AsignacionRow
-                  key={`${a.docFuncionario}-${a.idEvento}-${a.nombreEstadio}-${a.nombreSector}`}
-                  asignacion={a}
-                  onDone={reloadAsignaciones}
-                />
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Funcionario</th>
+                  <th>Evento</th>
+                  <th>Estadio</th>
+                  <th>Sector</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {asignaciones.data.map((a) => (
+                  <AsignacionRow
+                    key={`${a.docFuncionario}-${a.idEvento}-${a.nombreEstadio}-${a.nombreSector}`}
+                    asignacion={a}
+                    onDone={reloadAsignaciones}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
     </div>
@@ -62,11 +64,11 @@ function AsignarFuncionario({
   eventos: Evento[];
   onDone: () => void;
 }) {
+  const toast = useToast();
   const [docFuncionario, setDocFuncionario] = useState("");
   const [idEvento, setIdEvento] = useState("");
   const [sector, setSector] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const evento = eventos.find((e) => String(e.idEvento) === idEvento);
@@ -76,7 +78,6 @@ function AsignarFuncionario({
     e.preventDefault();
     if (!evento) return;
     setErr(null);
-    setOk(null);
     setBusy(true);
     try {
       await api.post("/asignaciones", {
@@ -88,7 +89,7 @@ function AsignarFuncionario({
       setDocFuncionario("");
       setIdEvento("");
       setSector("");
-      setOk("Asignación creada.");
+      toast.success("Asignación creada.");
       onDone();
     } catch (e2) {
       setErr(errorMessage(e2));
@@ -137,7 +138,6 @@ function AsignarFuncionario({
       </form>
       {evento && sectores.length === 0 && <p className="muted small">El evento seleccionado no tiene sectores habilitados.</p>}
       {err && <Banner kind="error">{err}</Banner>}
-      {ok && <Banner kind="ok">{ok}</Banner>}
     </Card>
   );
 }

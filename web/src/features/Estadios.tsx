@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../lib/api";
 import type { Estadio } from "../lib/types";
-import { Banner, Card, Field, Loading, errorMessage, useAsync } from "../components/ui";
+import { Banner, Card, EmptyState, Field, Skeleton, errorMessage, useAsync } from "../components/ui";
 
 export function Estadios() {
   const { data, loading, error, reload } = useAsync(() => api.get<Estadio[]>("/estadios"));
@@ -12,27 +12,29 @@ export function Estadios() {
       <AltaSector estadios={data ?? []} onDone={reload} />
 
       <Card title="Estadios">
-        {loading && <Loading />}
+        {loading && <Skeleton rows={3} />}
         {error && <Banner kind="error">{error}</Banner>}
-        {data && data.length === 0 && <p className="muted">No hay estadios.</p>}
+        {data && data.length === 0 && <EmptyState icon="🏟">No hay estadios registrados.</EmptyState>}
         {data?.map((e) => (
           <div key={e.nombre} className="subcard">
             <h3>{e.nombre} {e.direccion && <span className="muted">— {e.direccion}</span>}</h3>
             {e.sectores.length === 0 ? (
               <p className="muted small">(sin sectores)</p>
             ) : (
-              <table>
-                <thead>
-                  <tr><th>Sector</th><th>Capacidad</th><th>Costo</th></tr>
-                </thead>
-                <tbody>
-                  {e.sectores.map((s) => (
-                    <tr key={s.nombre}>
-                      <td>{s.nombre}</td><td>{s.capacidad}</td><td>${s.costoEntrada}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Sector</th><th className="num">Capacidad</th><th className="num">Costo</th></tr>
+                  </thead>
+                  <tbody>
+                    {e.sectores.map((s) => (
+                      <tr key={s.nombre}>
+                        <td>{s.nombre}</td><td className="num">{s.capacidad}</td><td className="num">${s.costoEntrada}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         ))}

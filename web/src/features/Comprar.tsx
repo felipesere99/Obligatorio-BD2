@@ -1,11 +1,21 @@
 import { useState } from "react";
 import { api } from "../lib/api";
 import type { CompraItem, Estadio, Evento, VentaCreada } from "../lib/types";
-import { Banner, Card, Field, Loading, errorMessage, useAsync } from "../components/ui";
+import {
+  Banner,
+  Card,
+  EmptyState,
+  Field,
+  Loading,
+  errorMessage,
+  useAsync,
+  useToast,
+} from "../components/ui";
 
 const MAX_ITEMS = 5;
 
 export function Comprar() {
+  const toast = useToast();
   const eventos = useAsync(() => api.get<Evento[]>("/eventos"));
   const estadios = useAsync(() => api.get<Estadio[]>("/estadios"));
 
@@ -15,7 +25,6 @@ export function Comprar() {
   const [fila, setFila] = useState("");
   const [asiento, setAsiento] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   const evento = eventos.data?.find((e) => String(e.idEvento) === idEvento);
@@ -43,7 +52,6 @@ export function Comprar() {
       },
     ]);
     resetDraft();
-    setOk(null);
   }
 
   function removeItem(i: number) {
@@ -52,11 +60,11 @@ export function Comprar() {
 
   async function comprar() {
     setErr(null);
-    setOk(null);
     setBusy(true);
+    const cantidad = items.length;
     try {
       const venta = await api.post<VentaCreada>("/ventas", { items });
-      setOk(`Compra OK. Venta #${venta.nroVenta} — total $${venta.montoTotal} (${items.length} entrada(s)).`);
+      toast.success(`Compra confirmada · Venta #${venta.nroVenta} · total $${venta.montoTotal} (${cantidad} entrada(s)).`);
       setItems([]);
     } catch (e) {
       setErr(errorMessage(e));
@@ -138,31 +146,34 @@ export function Comprar() {
 
       <Card title={`Carrito (${items.length}/${MAX_ITEMS})`}>
         {items.length === 0 ? (
-          <p className="muted">Sin ítems.</p>
+          <EmptyState icon="🛒">Tu carrito está vacío. Agregá entradas desde el formulario de arriba.</EmptyState>
         ) : (
-          <table>
-            <thead>
-              <tr><th>Evento</th><th>Estadio</th><th>Sector</th><th>Fila</th><th>Asiento</th><th></th></tr>
-            </thead>
-            <tbody>
-              {items.map((it, i) => (
-                <tr key={i}>
-                  <td>{labelEvento(it.idEvento)}</td>
-                  <td>{it.estadio}</td>
-                  <td>{it.sector}</td>
-                  <td>{it.fila ?? "-"}</td>
-                  <td>{it.asiento ?? "-"}</td>
-                  <td><button className="link" onClick={() => removeItem(i)}>quitar</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Evento</th><th>Estadio</th><th>Sector</th><th>Fila</th><th>Asiento</th><th></th></tr>
+              </thead>
+              <tbody>
+                {items.map((it, i) => (
+                  <tr key={i}>
+                    <td>{labelEvento(it.idEvento)}</td>
+                    <td>{it.estadio}</td>
+                    <td>{it.sector}</td>
+                    <td>{it.fila ?? "—"}</td>
+                    <td>{it.asiento ?? "—"}</td>
+                    <td><button className="link" onClick={() => removeItem(i)}>quitar</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         {err && <Banner kind="error">{err}</Banner>}
-        {ok && <Banner kind="ok">{ok}</Banner>}
-        <button onClick={comprar} disabled={busy || items.length === 0}>
-          {busy ? "Comprando…" : "Confirmar compra"}
-        </button>
+        <div className="row">
+          <button onClick={comprar} disabled={busy || items.length === 0}>
+            {busy ? "Comprando…" : "Confirmar compra"}
+          </button>
+        </div>
       </Card>
     </div>
   );

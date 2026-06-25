@@ -2,8 +2,17 @@ import { Fragment, useState } from "react";
 import { api } from "../lib/api";
 import { useSession } from "../lib/session";
 import type { Compra, Entrada } from "../lib/types";
-import { Banner, Card, Loading, errorMessage, useAsync } from "../components/ui";
+import { Badge, Banner, Card, EmptyState, Loading, Skeleton, errorMessage, useAsync, type BadgeTone } from "../components/ui";
 import { EntradaQr } from "./EntradaQr";
+
+const ESTADO_TONE: Record<string, BadgeTone> = {
+  pagada: "ok",
+  pagado: "ok",
+  confirmada: "ok",
+  pendiente: "warn",
+  cancelada: "err",
+  anulada: "err",
+};
 
 export function MisCompras() {
   const { session } = useSession();
@@ -36,23 +45,24 @@ export function MisCompras() {
 
   return (
     <Card title="Mis compras">
-      {loading && <Loading />}
+      {loading && <Skeleton rows={3} />}
       {error && <Banner kind="error">{error}</Banner>}
-      {data && data.length === 0 && <p className="muted">No tenés compras.</p>}
+      {data && data.length === 0 && <EmptyState icon="🧾">Todavía no realizaste compras.</EmptyState>}
       {data && data.length > 0 && (
+        <div className="table-wrap">
         <table>
           <thead>
-            <tr><th>Venta</th><th>Total</th><th>Estado</th><th>Fecha</th><th>Entradas</th><th></th></tr>
+            <tr><th>Venta</th><th className="num">Total</th><th>Estado</th><th>Fecha</th><th className="num">Entradas</th><th></th></tr>
           </thead>
           <tbody>
             {data.map((c) => (
               <Fragment key={c.nroVenta}>
                 <tr>
                   <td>#{c.nroVenta}</td>
-                  <td>${c.montoTotal}</td>
-                  <td>{c.estado}</td>
+                  <td className="num">${c.montoTotal}</td>
+                  <td><Badge tone={ESTADO_TONE[c.estado?.toLowerCase()] ?? "neutral"}>{c.estado}</Badge></td>
                   <td>{new Date(c.fecha).toLocaleString("es-UY", { dateStyle: "short", timeStyle: "short" })}</td>
-                  <td>{c.cantidadEntradas}</td>
+                  <td className="num">{c.cantidadEntradas}</td>
                   <td><button className="link" onClick={() => verEntradas(c.nroVenta)}>{sel === c.nroVenta ? "ocultar" : "ver entradas"}</button></td>
                 </tr>
                 {sel === c.nroVenta && (
@@ -87,6 +97,7 @@ export function MisCompras() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </Card>
   );

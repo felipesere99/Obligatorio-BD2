@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../lib/api";
 import type { Equipo } from "../lib/types";
-import { Banner, Card, Field, Loading, errorMessage, useAsync } from "../components/ui";
+import { Banner, Card, EmptyState, Field, Skeleton, errorMessage, useAsync } from "../components/ui";
 
 export function Equipos() {
   const { data, loading, error, reload } = useAsync(() => api.get<Equipo[]>("/equipos"));
@@ -38,20 +38,22 @@ export function Equipos() {
       </Card>
 
       <Card title="Equipos">
-        {loading && <Loading />}
+        {loading && <Skeleton rows={3} />}
         {error && <Banner kind="error">{error}</Banner>}
-        {data && data.length === 0 && <p className="muted">No hay equipos.</p>}
+        {data && data.length === 0 && <EmptyState icon="⚽">No hay equipos registrados.</EmptyState>}
         {data && data.length > 0 && (
-          <table>
-            <thead>
-              <tr><th>País</th><th>Nombre</th></tr>
-            </thead>
-            <tbody>
-              {data.map((e) => (
-                <tr key={e.pais}><td>{e.pais}</td><td>{e.nombre}</td></tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr><th>País</th><th>Nombre</th></tr>
+              </thead>
+              <tbody>
+                {data.map((e) => (
+                  <tr key={e.pais}><td>{e.pais}</td><td>{e.nombre}</td></tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
     </div>

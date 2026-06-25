@@ -30,8 +30,13 @@ export function Login({ onRegister }: { onRegister: () => void }) {
   return (
     <div className="auth">
       <div className="card auth-card">
-        <h1>Ticketing</h1>
-        <p className="muted">Ingresá con tu documento (no hay contraseña).</p>
+        <div className="auth-brand">
+          <img className="brand-logo brand-logo-lg" src="/logo.png" alt="" aria-hidden="true" />
+          <h1 style={{ margin: 0 }}>Ticketing</h1>
+        </div>
+        <p className="muted" style={{ textAlign: "center" }}>
+          Ingresá con tu documento (no hay contraseña).
+        </p>
         <form onSubmit={submit}>
           <Field
             label="Documento"

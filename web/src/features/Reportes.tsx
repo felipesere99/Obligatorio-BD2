@@ -1,11 +1,44 @@
+import type { ReactNode } from "react";
 import { api } from "../lib/api";
 import type { ReporteComprador, ReporteEventoVentas, ReporteSectorVentas } from "../lib/types";
-import { Banner, Card, Loading, useAsync } from "../components/ui";
+import { Banner, Card, EmptyState, Skeleton, useAsync } from "../components/ui";
 
 const money = new Intl.NumberFormat("es-UY", {
   style: "currency",
   currency: "UYU",
 });
+
+/** Tabla de reporte con estados de carga/error/vacío unificados. */
+function ReportTable<T>({
+  loading,
+  error,
+  rows,
+  emptyIcon,
+  emptyText,
+  head,
+  children,
+}: {
+  loading: boolean;
+  error: string | null;
+  rows: T[] | null;
+  emptyIcon: string;
+  emptyText: string;
+  head: ReactNode;
+  children: (rows: T[]) => ReactNode;
+}) {
+  if (loading) return <Skeleton rows={3} />;
+  if (error) return <Banner kind="error">{error}</Banner>;
+  if (rows && rows.length === 0) return <EmptyState icon={emptyIcon}>{emptyText}</EmptyState>;
+  if (!rows) return null;
+  return (
+    <div className="table-wrap">
+      <table>
+        <thead>{head}</thead>
+        <tbody>{children(rows)}</tbody>
+      </table>
+    </div>
+  );
+}
 
 export function Reportes() {
   const eventos = useAsync(() => api.get<ReporteEventoVentas[]>("/reportes/eventos"));
@@ -15,91 +48,94 @@ export function Reportes() {
   return (
     <div className="stack">
       <Card title="Top eventos por ventas">
-        {eventos.loading && <Loading />}
-        {eventos.error && <Banner kind="error">{eventos.error}</Banner>}
-        {eventos.data && eventos.data.length === 0 && <p className="muted">No hay ventas registradas.</p>}
-        {eventos.data && eventos.data.length > 0 && (
-          <table>
-            <thead>
-              <tr>
-                <th>Evento</th>
-                <th>Estadio</th>
-                <th>Entradas</th>
-                <th>Total</th>
+        <ReportTable
+          loading={eventos.loading}
+          error={eventos.error}
+          rows={eventos.data}
+          emptyIcon="📊"
+          emptyText="No hay ventas registradas."
+          head={
+            <tr>
+              <th>Evento</th>
+              <th>Estadio</th>
+              <th className="num">Entradas</th>
+              <th className="num">Total</th>
+            </tr>
+          }
+        >
+          {(rows) =>
+            rows.map((r) => (
+              <tr key={r.idEvento}>
+                <td>#{r.idEvento} — {r.nombreEvento}</td>
+                <td>{r.nombreEstadio}</td>
+                <td className="num">{r.cantidadEntradas}</td>
+                <td className="num">{money.format(r.totalVentas)}</td>
               </tr>
-            </thead>
-            <tbody>
-              {eventos.data.map((r) => (
-                <tr key={r.idEvento}>
-                  <td>#{r.idEvento} — {r.nombreEvento}</td>
-                  <td>{r.nombreEstadio}</td>
-                  <td>{r.cantidadEntradas}</td>
-                  <td>{money.format(r.totalVentas)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ))
+          }
+        </ReportTable>
       </Card>
 
       <Card title="Top sectores por ventas">
-        {sectores.loading && <Loading />}
-        {sectores.error && <Banner kind="error">{sectores.error}</Banner>}
-        {sectores.data && sectores.data.length === 0 && <p className="muted">No hay sectores habilitados.</p>}
-        {sectores.data && sectores.data.length > 0 && (
-          <table>
-            <thead>
-              <tr>
-                <th>Evento</th>
-                <th>Sector</th>
-                <th>Entradas</th>
-                <th>Total</th>
+        <ReportTable
+          loading={sectores.loading}
+          error={sectores.error}
+          rows={sectores.data}
+          emptyIcon="📊"
+          emptyText="No hay sectores habilitados."
+          head={
+            <tr>
+              <th>Evento</th>
+              <th>Sector</th>
+              <th className="num">Entradas</th>
+              <th className="num">Total</th>
+            </tr>
+          }
+        >
+          {(rows) =>
+            rows.map((r) => (
+              <tr key={`${r.idEvento}-${r.nombreEstadio}-${r.nombreSector}`}>
+                <td>#{r.idEvento} — {r.nombreEvento}</td>
+                <td>{r.nombreEstadio} / {r.nombreSector}</td>
+                <td className="num">{r.cantidadEntradas}</td>
+                <td className="num">{money.format(r.totalVentas)}</td>
               </tr>
-            </thead>
-            <tbody>
-              {sectores.data.map((r) => (
-                <tr key={`${r.idEvento}-${r.nombreEstadio}-${r.nombreSector}`}>
-                  <td>#{r.idEvento} — {r.nombreEvento}</td>
-                  <td>{r.nombreEstadio} / {r.nombreSector}</td>
-                  <td>{r.cantidadEntradas}</td>
-                  <td>{money.format(r.totalVentas)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ))
+          }
+        </ReportTable>
       </Card>
 
       <Card title="Ranking de compradores">
-        {compradores.loading && <Loading />}
-        {compradores.error && <Banner kind="error">{compradores.error}</Banner>}
-        {compradores.data && compradores.data.length === 0 && <p className="muted">No hay compradores.</p>}
-        {compradores.data && compradores.data.length > 0 && (
-          <table>
-            <thead>
-              <tr>
-                <th>Comprador</th>
-                <th>Compras</th>
-                <th>Entradas</th>
-                <th>Total</th>
+        <ReportTable
+          loading={compradores.loading}
+          error={compradores.error}
+          rows={compradores.data}
+          emptyIcon="🏆"
+          emptyText="No hay compradores."
+          head={
+            <tr>
+              <th>Comprador</th>
+              <th className="num">Compras</th>
+              <th className="num">Entradas</th>
+              <th className="num">Total</th>
+            </tr>
+          }
+        >
+          {(rows) =>
+            rows.map((r) => (
+              <tr key={r.documento}>
+                <td>
+                  {r.nombre} {r.apellido}
+                  <br />
+                  <span className="muted small">{r.documento}</span>
+                </td>
+                <td className="num">{r.cantidadCompras}</td>
+                <td className="num">{r.cantidadEntradas}</td>
+                <td className="num">{money.format(r.totalGastado)}</td>
               </tr>
-            </thead>
-            <tbody>
-              {compradores.data.map((r) => (
-                <tr key={r.documento}>
-                  <td>
-                    {r.nombre} {r.apellido}
-                    <br />
-                    <span className="muted small">{r.documento}</span>
-                  </td>
-                  <td>{r.cantidadCompras}</td>
-                  <td>{r.cantidadEntradas}</td>
-                  <td>{money.format(r.totalGastado)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ))
+          }
+        </ReportTable>
       </Card>
     </div>
   );

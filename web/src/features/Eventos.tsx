@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../lib/api";
 import type { Equipo, Estadio, Evento } from "../lib/types";
-import { Banner, Card, Field, Loading, errorMessage, useAsync } from "../components/ui";
+import { Banner, Card, EmptyState, Field, Skeleton, errorMessage, useAsync } from "../components/ui";
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleString("es-UY", { dateStyle: "short", timeStyle: "short" });
@@ -22,9 +22,9 @@ export function Eventos() {
       <HabilitarSector eventos={eventos.data ?? []} estadios={estadios.data ?? []} onDone={reloadEventos} />
 
       <Card title="Eventos">
-        {eventos.loading && <Loading />}
+        {eventos.loading && <Skeleton rows={3} />}
         {eventos.error && <Banner kind="error">{eventos.error}</Banner>}
-        {eventos.data && eventos.data.length === 0 && <p className="muted">No hay eventos.</p>}
+        {eventos.data && eventos.data.length === 0 && <EmptyState icon="📅">No hay eventos creados.</EmptyState>}
         {eventos.data?.map((ev) => (
           <div key={ev.idEvento} className="subcard">
             <h3>#{ev.idEvento} — {ev.nombre}</h3>

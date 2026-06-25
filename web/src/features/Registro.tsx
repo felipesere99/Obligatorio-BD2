@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../lib/api";
 import type { RegistrarUsuarioRequest } from "../lib/types";
-import { Banner, Field, errorMessage } from "../components/ui";
+import { Banner, Field, errorMessage, useToast } from "../components/ui";
 
 const EMPTY: RegistrarUsuarioRequest = {
   documento: "",
@@ -16,9 +16,9 @@ const EMPTY: RegistrarUsuarioRequest = {
 };
 
 export function Registro({ onBack }: { onBack: () => void }) {
+  const toast = useToast();
   const [form, setForm] = useState<RegistrarUsuarioRequest>(EMPTY);
   const [error, setError] = useState<string | null>(null);
-  const [done, setDone] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   function set<K extends keyof RegistrarUsuarioRequest>(key: K, value: string) {
@@ -28,7 +28,6 @@ export function Registro({ onBack }: { onBack: () => void }) {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setDone(null);
     setBusy(true);
     try {
       // Los campos de dirección vacíos viajan como null.
@@ -41,8 +40,9 @@ export function Registro({ onBack }: { onBack: () => void }) {
         dirCodigoPostal: form.dirCodigoPostal || null,
       };
       const res = await api.post<{ documento: string }>("/usuarios/generales", body);
-      setDone(`Usuario ${res.documento} registrado. Ya podés ingresar con ese documento.`);
       setForm(EMPTY);
+      toast.success(`Usuario ${res.documento} registrado. Ya podés ingresar con ese documento.`);
+      onBack();
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -70,7 +70,6 @@ export function Registro({ onBack }: { onBack: () => void }) {
           </fieldset>
 
           {error && <Banner kind="error">{error}</Banner>}
-          {done && <Banner kind="ok">{done}</Banner>}
 
           <div className="row">
             <button type="button" className="secondary" onClick={onBack}>

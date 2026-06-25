@@ -68,12 +68,16 @@ function Dashboard({ rol, nombre, onLogout }: { rol: Rol; nombre: string; onLogo
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">Ticketing</div>
-        <nav className="tabs">
+        <div className="brand">
+          <img className="brand-logo" src="/logo.png" alt="" aria-hidden="true" />
+          Ticketing
+        </div>
+        <nav className="tabs" aria-label="Secciones">
           {tabs.map((t) => (
             <button
               key={t.id}
               className={t.id === active ? "tab active" : "tab"}
+              aria-current={t.id === active ? "page" : undefined}
               onClick={() => setActive(t.id)}
             >
               {t.label}
