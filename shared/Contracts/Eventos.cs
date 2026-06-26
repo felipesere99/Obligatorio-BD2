@@ -12,6 +12,15 @@ public record CrearEventoRequest(
 /// <summary>Respuesta al crear un evento: id generado.</summary>
 public record EventoCreadoResponse(int IdEvento);
 
+/// <summary>Modificación de un evento. El id es la PK (viene en la ruta).</summary>
+public record ActualizarEventoRequest(
+    string Nombre,
+    DateTime FechaInicio,
+    DateTime FechaFin,
+    string PaisLocal,
+    string PaisVisitante,
+    string NombreEstadio);
+
 /// <summary>Habilita un sector (de un estadio) para un evento.</summary>
 public record HabilitarSectorRequest(string NombreEstadio, string NombreSector);
 
