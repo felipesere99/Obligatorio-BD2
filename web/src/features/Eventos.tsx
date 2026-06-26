@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "../lib/api";
 import type { Equipo, Estadio, Evento } from "../lib/types";
-import { Banner, Card, EmptyState, Field, Skeleton, errorMessage, useAsync } from "../components/ui";
+import { Banner, Card, EmptyState, Field, Skeleton, errorMessage, useAsync, useToast } from "../components/ui";
 
 function fmt(iso: string) {
   return new Date(iso).toLocaleString("es-UY", { dateStyle: "short", timeStyle: "short" });
@@ -26,22 +26,7 @@ export function Eventos() {
         {eventos.error && <Banner kind="error">{eventos.error}</Banner>}
         {eventos.data && eventos.data.length === 0 && <EmptyState icon="📅">No hay eventos creados.</EmptyState>}
         {eventos.data?.map((ev) => (
-          <div key={ev.idEvento} className="subcard">
-            <h3>#{ev.idEvento} — {ev.nombre}</h3>
-            <p className="muted small">
-              {ev.paisLocal} vs {ev.paisVisitante} · {ev.nombreEstadio}
-              <br />
-              {fmt(ev.fechaInicio)} → {fmt(ev.fechaFin)}
-            </p>
-            <p className="small">
-              Sectores habilitados:{" "}
-              {ev.sectoresHabilitados.length === 0 ? (
-                <span className="muted">(ninguno)</span>
-              ) : (
-                ev.sectoresHabilitados.join(", ")
-              )}
-            </p>
-          </div>
+          <EventoCard key={ev.idEvento} ev={ev} onDone={reloadEventos} />
         ))}
       </Card>
     </div>
@@ -112,6 +97,53 @@ function AltaEvento({
       </form>
       {err && <Banner kind="error">{err}</Banner>}
     </Card>
+  );
+}
+
+function EventoCard({ ev, onDone }: { ev: Evento; onDone: () => void }) {
+  const toast = useToast();
+  const [err, setErr] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function deshabilitarSector(sector: string) {
+    setErr(null);
+    setBusy(true);
+    try {
+      await api.delete(`/eventos/${ev.idEvento}/sectores/${encodeURIComponent(sector)}`);
+      toast.success(`Sector "${sector}" deshabilitado.`);
+      onDone();
+    } catch (e) {
+      setErr(errorMessage(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="subcard">
+      <h3>#{ev.idEvento} — {ev.nombre}</h3>
+      <p className="muted small">
+        {ev.paisLocal} vs {ev.paisVisitante} · {ev.nombreEstadio}
+        <br />
+        {fmt(ev.fechaInicio)} → {fmt(ev.fechaFin)}
+      </p>
+      <p className="small">Sectores habilitados:</p>
+      {ev.sectoresHabilitados.length === 0 ? (
+        <span className="muted small">(ninguno)</span>
+      ) : (
+        <div className="chip-list">
+          {ev.sectoresHabilitados.map((s) => (
+            <span className="chip" key={s}>
+              {s}
+              <button type="button" className="chip-button" onClick={() => deshabilitarSector(s)} disabled={busy}>
+                x
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      {err && <Banner kind="error">{err}</Banner>}
+    </div>
   );
 }
 

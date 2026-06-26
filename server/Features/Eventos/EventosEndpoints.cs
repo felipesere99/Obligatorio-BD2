@@ -1,3 +1,4 @@
+using MySqlConnector;
 using Server.Api.Auth;
 using Server.Api.Data;
 using Shared.Contracts;
@@ -60,6 +61,37 @@ public static class EventosEndpoints
             var sector = req.NombreSector.Trim();
             return Results.Created($"/eventos/{id}/sectores/{sector}",
                 new { idEvento = id, nombreEstadio = req.NombreEstadio, nombreSector = sector });
+        });
+
+        // DELETE /eventos/{id}/sectores/{sector} (admin) -> deshabilita un sector del evento.
+        app.MapDelete("/eventos/{id:int}/sectores/{sector}", async (int id, string sector, HttpContext ctx, Db db) =>
+        {
+            var (_, error) = ctx.Authorize(Roles.Administrador);
+            if (error is not null) return error;
+
+            var nombreEstadio = await db.ScalarAsync<string?>(
+                "SELECT nombre_estadio FROM evento WHERE id_evento = @id",
+                p => p.AddWithValue("id", id));
+
+            if (nombreEstadio is null)
+                return Results.NotFound(new ApiError("Evento no encontrado."));
+
+            var rowsAffected = await db.ExecuteAsync(
+                """
+                DELETE FROM evento_sector
+                WHERE id_evento = @id AND nombre_estadio = @estadio AND nombre_sector = @sector
+                """,
+                p =>
+                {
+                    p.AddWithValue("id", id);
+                    p.AddWithValue("estadio", nombreEstadio);
+                    p.AddWithValue("sector", sector);
+                });
+
+            if (rowsAffected == 0)
+                return Results.NotFound(new ApiError("Sector no habilitado en este evento."));
+
+            return Results.NoContent();
         });
 
         // GET /eventos (admin, usuario_general) -> lista los eventos con sus sectores habilitados.
