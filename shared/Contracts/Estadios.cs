@@ -3,8 +3,14 @@ namespace Shared.Contracts;
 /// <summary>Alta de un estadio. El nombre es la PK; la dirección es opcional.</summary>
 public record RegistrarEstadioRequest(string Nombre, string? Direccion = null);
 
+/// <summary>Modificación de un estadio. El nombre es la PK (no se renombra); solo cambia la dirección.</summary>
+public record ActualizarEstadioRequest(string? Direccion = null);
+
 /// <summary>Alta de un sector de un estadio. El estadio viene en la ruta.</summary>
 public record RegistrarSectorRequest(string Nombre, int Capacidad, decimal CostoEntrada);
+
+/// <summary>Modificación de un sector. El nombre es PK (no se renombra); cambian capacidad y costo.</summary>
+public record ActualizarSectorRequest(int Capacidad, decimal CostoEntrada);
 
 /// <summary>Sector devuelto dentro de un estadio.</summary>
 public record SectorResponse(string Nombre, int Capacidad, decimal CostoEntrada);
