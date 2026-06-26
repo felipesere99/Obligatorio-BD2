@@ -205,9 +205,8 @@ END //
 CREATE TRIGGER tr_transferencia_control
     BEFORE INSERT ON transferencia FOR EACH ROW
 BEGIN
-    DECLARE v_validada    DATETIME(6);
-    DECLARE v_aceptadas   INT;
-    DECLARE v_existentes  INT;
+    DECLARE v_validada   DATETIME(6);
+    DECLARE v_aceptadas  INT;
 
     SELECT hora_validacion INTO v_validada FROM entrada WHERE nro_entrada = NEW.nro_entrada;
     IF v_validada IS NOT NULL THEN
@@ -223,10 +222,8 @@ BEGIN
             SET MESSAGE_TEXT = 'La entrada ya alcanzó el máximo de 3 transferencias';
     END IF;
 
-    SELECT count(*) INTO v_existentes
-    FROM transferencia
-    WHERE nro_entrada = NEW.nro_entrada;
-    SET NEW.contador = v_existentes + 1;
+    -- contador refleja el número de orden entre las aceptadas, nunca supera 3
+    SET NEW.contador = v_aceptadas + 1;
 END //
 
 -- ------------------------------------------------------------
