@@ -515,11 +515,11 @@ public static class Menu
         }
     }
 
-    private static DateTimeOffset PromptDate(string label)
+    private static DateTime PromptDate(string label)
     {
         while (true)
         {
-            if (DateTimeOffset.TryParse(Prompt(label), out var value))
+            if (DateTime.TryParse(Prompt(label), out var value))
                 return value;
             Console.WriteLine("Fecha inválida. Usá el formato 2026-06-20 18:00.");
         }

@@ -3,8 +3,8 @@ namespace Shared.Contracts;
 /// <summary>Alta de un evento en un estadio entre dos equipos (por país).</summary>
 public record CrearEventoRequest(
     string Nombre,
-    DateTimeOffset FechaInicio,
-    DateTimeOffset FechaFin,
+    DateTime FechaInicio,
+    DateTime FechaFin,
     string PaisLocal,
     string PaisVisitante,
     string NombreEstadio);

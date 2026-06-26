@@ -73,8 +73,8 @@ function AltaEvento({
     try {
       await api.post("/eventos", {
         nombre: nombre.trim(),
-        fechaInicio: new Date(inicio).toISOString(),
-        fechaFin: new Date(fin).toISOString(),
+        fechaInicio: inicio,
+        fechaFin: fin,
         paisLocal: local,
         paisVisitante: visitante,
         nombreEstadio: estadio,

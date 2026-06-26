@@ -27,9 +27,8 @@ public static class EventosEndpoints
                 p =>
                 {
                     p.AddWithValue("nombre", req.Nombre.Trim());
-                    // DATETIME guarda en UTC por convención: normalizamos cualquier offset del client.
-                    p.AddWithValue("inicio", req.FechaInicio.UtcDateTime);
-                    p.AddWithValue("fin", req.FechaFin.UtcDateTime);
+                    p.AddWithValue("inicio", req.FechaInicio);
+                    p.AddWithValue("fin", req.FechaFin);
                     p.AddWithValue("local", req.PaisLocal);
                     p.AddWithValue("visitante", req.PaisVisitante);
                     p.AddWithValue("estadio", req.NombreEstadio.Trim());
