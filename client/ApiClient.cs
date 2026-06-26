@@ -37,6 +37,12 @@ public sealed class ApiClient
     public Task<T> PatchAsync<T>(string path, object body) =>
         SendAsync<T>(new HttpRequestMessage(HttpMethod.Patch, path) { Content = JsonContent.Create(body) });
 
+    public Task PutAsync(string path, object body) =>
+        SendVoidAsync(new HttpRequestMessage(HttpMethod.Put, path) { Content = JsonContent.Create(body) });
+
+    public Task DeleteAsync(string path) =>
+        SendVoidAsync(new HttpRequestMessage(HttpMethod.Delete, path));
+
     private async Task<T> SendAsync<T>(HttpRequestMessage req)
     {
         using (req)
@@ -56,6 +62,25 @@ public sealed class ApiClient
 
             var data = await resp.Content.ReadFromJsonAsync<T>();
             return data!;
+        }
+    }
+
+    private async Task SendVoidAsync(HttpRequestMessage req)
+    {
+        using (req)
+        {
+            if (Session is not null)
+            {
+                req.Headers.Add(AuthHeaders.Documento, Session.Documento);
+                req.Headers.Add(AuthHeaders.Rol, Session.Rol);
+            }
+
+            using var resp = await _http.SendAsync(req);
+            if (!resp.IsSuccessStatusCode)
+            {
+                var err = await SafeReadError(resp);
+                throw new ApiException(err);
+            }
         }
     }
 

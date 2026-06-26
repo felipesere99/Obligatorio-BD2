@@ -4,6 +4,7 @@ import type { Rol } from "./lib/types";
 import { Login } from "./features/Login";
 import { Registro } from "./features/Registro";
 import { Usuarios } from "./features/Usuarios";
+import { Funcionarios } from "./features/Funcionarios";
 import { Equipos } from "./features/Equipos";
 import { Estadios } from "./features/Estadios";
 import { Eventos } from "./features/Eventos";
@@ -26,6 +27,7 @@ interface Tab {
 const TABS: Record<Rol, Tab[]> = {
   administrador: [
     { id: "usuarios", label: "Usuarios", render: () => <Usuarios /> },
+    { id: "funcionarios", label: "Funcionarios", render: () => <Funcionarios /> },
     { id: "equipos", label: "Equipos", render: () => <Equipos /> },
     { id: "estadios", label: "Estadios", render: () => <Estadios /> },
     { id: "eventos", label: "Eventos", render: () => <Eventos /> },
