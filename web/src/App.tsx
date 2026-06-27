@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "./lib/session";
 import type { Rol } from "./lib/types";
 import { Login } from "./features/Login";
@@ -23,6 +23,8 @@ interface Tab {
   label: string;
   render: () => JSX.Element;
 }
+
+type Theme = "dark" | "light";
 
 const TABS: Record<Rol, Tab[]> = {
   administrador: [
@@ -50,6 +52,19 @@ const TABS: Record<Rol, Tab[]> = {
 export default function App() {
   const { session, logout } = useSession();
   const [showRegistro, setShowRegistro] = useState(false);
+  const [theme, setTheme] = useState<Theme>(() => {
+    const saved = window.localStorage.getItem("theme");
+    return saved === "light" || saved === "dark" ? saved : "dark";
+  });
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    window.localStorage.setItem("theme", theme);
+  }, [theme]);
+
+  function toggleTheme() {
+    setTheme((current) => (current === "dark" ? "light" : "dark"));
+  }
 
   if (!session) {
     return showRegistro ? (
@@ -59,10 +74,30 @@ export default function App() {
     );
   }
 
-  return <Dashboard rol={session.rol} nombre={session.nombre} onLogout={logout} />;
+  return (
+    <Dashboard
+      rol={session.rol}
+      nombre={session.nombre}
+      theme={theme}
+      onToggleTheme={toggleTheme}
+      onLogout={logout}
+    />
+  );
 }
 
-function Dashboard({ rol, nombre, onLogout }: { rol: Rol; nombre: string; onLogout: () => void }) {
+function Dashboard({
+  rol,
+  nombre,
+  theme,
+  onToggleTheme,
+  onLogout,
+}: {
+  rol: Rol;
+  nombre: string;
+  theme: Theme;
+  onToggleTheme: () => void;
+  onLogout: () => void;
+}) {
   const tabs = TABS[rol];
   const [active, setActive] = useState(tabs[0]?.id ?? "");
   const current = tabs.find((t) => t.id === active);
@@ -88,6 +123,15 @@ function Dashboard({ rol, nombre, onLogout }: { rol: Rol; nombre: string; onLogo
         </nav>
         <div className="user">
           <span className="muted small">{nombre} · {rol}</span>
+          <button
+            className="theme-toggle"
+            onClick={onToggleTheme}
+            type="button"
+            aria-label={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+            title={theme === "dark" ? "Modo claro" : "Modo oscuro"}
+          >
+            <span aria-hidden="true">{theme === "dark" ? "☀" : "☾"}</span>
+          </button>
           <button className="secondary" onClick={onLogout}>Salir</button>
         </div>
       </header>
