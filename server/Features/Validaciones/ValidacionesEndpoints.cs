@@ -25,7 +25,7 @@ public static class ValidacionesEndpoints
                 WHERE doc_funcionario = @doc
                 ORDER BY id_dispositivo
                 """,
-                r => new DispositivoResponse(r.GetInt32(0)),
+                r => new DispositivoValidadorResponse(r.GetInt32(0)),
                 p => p.AddWithValue("doc", user!.Documento));
 
             return Results.Ok(dispositivos);

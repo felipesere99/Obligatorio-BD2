@@ -17,7 +17,7 @@ public record ValidacionResponse(
     int IdDispositivo);
 
 /// <summary>Un dispositivo de validación asociado a un funcionario.</summary>
-public record DispositivoResponse(int IdDispositivo);
+public record DispositivoValidadorResponse(int IdDispositivo);
 
 /// <summary>
 /// Código QR activo de una entrada. <see cref="ExpiraEnSegundos"/> es una pista
