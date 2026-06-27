@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import type { Dispositivo, Funcionario } from "../lib/types";
-import { Banner, Card, Field, Loading, errorMessage, useAsync } from "../components/ui";
+import { Badge, Banner, Card, EmptyState, Field, Skeleton, errorMessage, useAsync, useToast } from "../components/ui";
 
 interface DispositivoForm {
   nroSerie: string;
@@ -35,28 +35,30 @@ export function Dispositivos() {
       />
 
       <Card title="Dispositivos">
-        {(dispositivos.loading || funcionarios.loading) && <Loading />}
+        {(dispositivos.loading || funcionarios.loading) && <Skeleton rows={3} />}
         {dispositivos.error && <Banner kind="error">{dispositivos.error}</Banner>}
         {funcionarios.error && <Banner kind="error">{funcionarios.error}</Banner>}
-        {dispositivos.data && dispositivos.data.length === 0 && <p className="muted">No hay dispositivos.</p>}
+        {dispositivos.data && dispositivos.data.length === 0 && <EmptyState icon="📟">No hay dispositivos registrados.</EmptyState>}
         {dispositivos.data && dispositivos.data.length > 0 && (
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Serie</th>
-                <th>Marca / modelo</th>
-                <th>Estado</th>
-                <th>Funcionarios asignados</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {dispositivos.data.map((d) => (
-                <DispositivoRow key={d.idDispositivo} dispositivo={d} onDone={reload} />
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Serie</th>
+                  <th>Marca / modelo</th>
+                  <th>Estado</th>
+                  <th>Funcionarios asignados</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {dispositivos.data.map((d) => (
+                  <DispositivoRow key={d.idDispositivo} dispositivo={d} onDone={reload} />
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </Card>
     </div>
@@ -64,20 +66,19 @@ export function Dispositivos() {
 }
 
 function CrearDispositivo({ onDone }: { onDone: () => void }) {
+  const toast = useToast();
   const [form, setForm] = useState<DispositivoForm>(EMPTY_FORM);
   const [err, setErr] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
-    setOk(null);
     setBusy(true);
     try {
       const creado = await api.post<{ idDispositivo?: number; nroSerie?: string }>("/dispositivos", normalizeForm(form));
       setForm(EMPTY_FORM);
-      setOk(`Dispositivo #${creado.idDispositivo ?? "nuevo"} (${creado.nroSerie ?? form.nroSerie.trim()}) creado.`);
+      toast.success(`Dispositivo #${creado.idDispositivo ?? "nuevo"} (${creado.nroSerie ?? form.nroSerie.trim()}) creado.`);
       onDone();
     } catch (e2) {
       setErr(errorMessage(e2));
@@ -90,7 +91,6 @@ function CrearDispositivo({ onDone }: { onDone: () => void }) {
     <Card title="Registrar dispositivo">
       <DispositivoFormFields form={form} onChange={setForm} onSubmit={submit} busy={busy} submitLabel="Registrar" />
       {err && <Banner kind="error">{err}</Banner>}
-      {ok && <Banner kind="ok">{ok}</Banner>}
     </Card>
   );
 }
@@ -152,16 +152,15 @@ function AsignarDispositivo({
   funcionarios: Funcionario[];
   onDone: () => void;
 }) {
+  const toast = useToast();
   const [docFuncionario, setDocFuncionario] = useState("");
   const [idDispositivo, setIdDispositivo] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
-    setOk(null);
     setBusy(true);
     try {
       await api.post(`/funcionarios/${encodeURIComponent(docFuncionario)}/dispositivos`, {
@@ -169,7 +168,7 @@ function AsignarDispositivo({
       });
       setDocFuncionario("");
       setIdDispositivo("");
-      setOk("Dispositivo asignado.");
+      toast.success("Dispositivo asignado.");
       onDone();
     } catch (e2) {
       setErr(errorMessage(e2));
@@ -208,7 +207,6 @@ function AsignarDispositivo({
         </button>
       </form>
       {err && <Banner kind="error">{err}</Banner>}
-      {ok && <Banner kind="ok">{ok}</Banner>}
     </Card>
   );
 }
@@ -298,7 +296,11 @@ function DispositivoRow({ dispositivo, onDone }: { dispositivo: Dispositivo; onD
       <td>#{dispositivo.idDispositivo}</td>
       <td>{dispositivo.nroSerie || "Sin serie"}</td>
       <td>{deviceLabel(dispositivo)}</td>
-      <td>{dispositivo.habilitado ? "Habilitado" : "Deshabilitado"}</td>
+      <td>
+        <Badge tone={dispositivo.habilitado ? "ok" : "neutral"}>
+          {dispositivo.habilitado ? "habilitado" : "deshabilitado"}
+        </Badge>
+      </td>
       <td>
         {dispositivo.funcionariosAsignados.length === 0 ? (
           <span className="muted">Sin asignar</span>
@@ -319,7 +321,7 @@ function DispositivoRow({ dispositivo, onDone }: { dispositivo: Dispositivo; onD
       <td>
         <div className="row">
           <button className="secondary" type="button" onClick={() => setEditing(true)} disabled={busy}>Editar</button>
-          <button className="secondary" type="button" onClick={eliminar} disabled={busy}>
+          <button className="danger" type="button" onClick={eliminar} disabled={busy}>
             {busy ? "..." : "Eliminar"}
           </button>
         </div>

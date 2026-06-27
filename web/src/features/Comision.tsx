@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { ApiError, api } from "../lib/api";
 import type { Comision } from "../lib/types";
-import { Banner, Card, Field, Loading, errorMessage, useAsync } from "../components/ui";
+import { Badge, Banner, Card, EmptyState, Field, Loading, errorMessage, useAsync } from "../components/ui";
 
 export function ComisionPanel() {
   // GET /comisiones/vigente da 404 si no hay ninguna: lo tratamos como "sin comisión".
@@ -40,14 +40,14 @@ export function ComisionPanel() {
         {error && <Banner kind="error">{error}</Banner>}
         {!loading && !error && (
           data ? (
-            <p>
-              <strong>{data.porcentaje}%</strong>{" "}
-              <span className="muted">
-                (id {data.idComision}, desde {new Date(data.vigenteDesde).toLocaleString("es-UY")})
+            <p style={{ display: "flex", alignItems: "center", gap: "0.6rem", margin: 0 }}>
+              <Badge tone="ok">{data.porcentaje}% vigente</Badge>
+              <span className="muted small">
+                id {data.idComision} · desde {new Date(data.vigenteDesde).toLocaleString("es-UY")}
               </span>
             </p>
           ) : (
-            <p className="muted">No hay una comisión vigente.</p>
+            <EmptyState icon="%">No hay una comisión vigente.</EmptyState>
           )
         )}
       </Card>

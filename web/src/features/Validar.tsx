@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import type { Dispositivo, Validacion } from "../lib/types";
 import { Banner, Card, Field, Loading, errorMessage, useAsync } from "../components/ui";
@@ -16,11 +16,13 @@ export function Validar() {
   const [ok, setOk] = useState<Validacion | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Default: primer dispositivo cuando carga la lista.
+  // Default: primer dispositivo cuando carga la lista (efecto, no durante el render).
   const disp = dispositivos.data;
-  if (disp && disp.length > 0 && idDispositivo === "") {
-    setIdDispositivo(disp[0].idDispositivo);
-  }
+  useEffect(() => {
+    if (disp && disp.length > 0 && idDispositivo === "") {
+      setIdDispositivo(disp[0].idDispositivo);
+    }
+  }, [disp, idDispositivo]);
 
   async function validar(e: React.FormEvent) {
     e.preventDefault();
@@ -52,7 +54,7 @@ export function Validar() {
   }
 
   return (
-    <Card title="Validar ingreso">
+    <Card title="Validar ingreso" subtitle="Escaneá o pegá el código del QR de la entrada.">
       {dispositivos.loading && <Loading />}
       {dispositivos.error && <Banner kind="error">{dispositivos.error}</Banner>}
       {disp && disp.length === 0 && (
@@ -83,7 +85,7 @@ export function Validar() {
             </select>
           </label>
 
-          <button type="submit" disabled={enviando}>
+          <button type="submit" disabled={enviando || !codigo.trim()}>
             {enviando ? "Validando…" : "Validar"}
           </button>
         </form>

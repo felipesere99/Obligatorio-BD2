@@ -1,13 +1,23 @@
 import { useState } from "react";
 import { api } from "../lib/api";
-import type { CompraItem, Estadio, Evento, VentaCreada } from "../lib/types";
-import { Banner, Card, Field, Loading, errorMessage, useAsync } from "../components/ui";
+import type { CompraItem, Evento, SectorDisponibilidad, VentaCreada } from "../lib/types";
+import {
+  Banner,
+  Card,
+  EmptyState,
+  Field,
+  Loading,
+  errorMessage,
+  useAsync,
+  useToast,
+} from "../components/ui";
 
 const MAX_ITEMS = 5;
+const POCOS_CUPOS = 5;
 
 export function Comprar() {
+  const toast = useToast();
   const eventos = useAsync(() => api.get<Evento[]>("/eventos"));
-  const estadios = useAsync(() => api.get<Estadio[]>("/estadios"));
 
   const [items, setItems] = useState<CompraItem[]>([]);
   const [idEvento, setIdEvento] = useState("");
@@ -15,12 +25,20 @@ export function Comprar() {
   const [fila, setFila] = useState("");
   const [asiento, setAsiento] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
+  const disponibilidad = useAsync(
+    () =>
+      idEvento
+        ? api.get<SectorDisponibilidad[]>(`/eventos/${idEvento}/disponibilidad`)
+        : Promise.resolve([]),
+    [idEvento],
+  );
+
   const evento = eventos.data?.find((e) => String(e.idEvento) === idEvento);
-  const estadio = estadios.data?.find((es) => es.nombre === evento?.nombreEstadio);
-  const sectores = estadio?.sectores.filter((s) => evento?.sectoresHabilitados.includes(s.nombre)) ?? [];
+  const sectores = disponibilidad.data ?? [];
+  const sectorSel = sectores.find((s) => s.nombreSector === sector);
+  const sectorAgotado = sectorSel?.disponibles === 0;
 
   function resetDraft() {
     setIdEvento("");
@@ -43,7 +61,6 @@ export function Comprar() {
       },
     ]);
     resetDraft();
-    setOk(null);
   }
 
   function removeItem(i: number) {
@@ -52,11 +69,11 @@ export function Comprar() {
 
   async function comprar() {
     setErr(null);
-    setOk(null);
     setBusy(true);
+    const cantidad = items.length;
     try {
       const venta = await api.post<VentaCreada>("/ventas", { items });
-      setOk(`Compra OK. Venta #${venta.nroVenta} — total $${venta.montoTotal} (${items.length} entrada(s)).`);
+      toast.success(`Compra confirmada · Venta #${venta.nroVenta} · total $${venta.montoTotal} (${cantidad} entrada(s)).`);
       setItems([]);
     } catch (e) {
       setErr(errorMessage(e));
@@ -70,8 +87,8 @@ export function Comprar() {
     return ev ? `#${ev.idEvento} — ${ev.nombre}` : String(id);
   }
 
-  const loading = eventos.loading || estadios.loading;
-  const loadErr = eventos.error ?? estadios.error;
+  const loading = eventos.loading;
+  const loadErr = eventos.error;
 
   return (
     <div className="stack">
@@ -111,25 +128,43 @@ export function Comprar() {
                 value={sector}
                 onChange={(e) => setSector(e.target.value)}
                 required
-                disabled={!evento || sectores.length === 0}
+                disabled={!evento || disponibilidad.loading || sectores.length === 0}
               >
                 <option value="">
                   {!evento
                     ? "— elegir evento primero —"
-                    : sectores.length === 0
-                      ? "— sin sectores habilitados —"
-                      : "— elegir sector —"}
+                    : disponibilidad.loading
+                      ? "— cargando sectores —"
+                      : sectores.length === 0
+                        ? "— sin sectores habilitados —"
+                        : "— elegir sector —"}
                 </option>
                 {sectores.map((s) => (
-                  <option key={s.nombre} value={s.nombre}>
-                    {s.nombre} — ${s.costoEntrada}
+                  <option
+                    key={s.nombreSector}
+                    value={s.nombreSector}
+                    disabled={s.disponibles === 0}
+                  >
+                    {s.nombreSector} — ${s.costoEntrada} —{" "}
+                    {s.disponibles === 0 ? "Agotado" : `${s.disponibles} disponibles`}
                   </option>
                 ))}
               </select>
+              {disponibilidad.error && (
+                <span className="muted small">{disponibilidad.error}</span>
+              )}
+              {sectorSel && sectorSel.disponibles > 0 && sectorSel.disponibles <= POCOS_CUPOS && (
+                <span className="muted small">
+                  Quedan {sectorSel.disponibles} entradas en este sector.
+                </span>
+              )}
             </label>
             <Field label="Fila (opcional)" value={fila} onChange={(e) => setFila(e.target.value)} disabled={!evento} />
             <Field label="Asiento (opcional)" value={asiento} onChange={(e) => setAsiento(e.target.value)} disabled={!evento} />
-            <button type="submit" disabled={items.length >= MAX_ITEMS || !evento || !sector}>
+            <button
+              type="submit"
+              disabled={items.length >= MAX_ITEMS || !evento || !sector || sectorAgotado}
+            >
               Agregar ítem
             </button>
           </form>
@@ -138,31 +173,34 @@ export function Comprar() {
 
       <Card title={`Carrito (${items.length}/${MAX_ITEMS})`}>
         {items.length === 0 ? (
-          <p className="muted">Sin ítems.</p>
+          <EmptyState icon="🛒">Tu carrito está vacío. Agregá entradas desde el formulario de arriba.</EmptyState>
         ) : (
-          <table>
-            <thead>
-              <tr><th>Evento</th><th>Estadio</th><th>Sector</th><th>Fila</th><th>Asiento</th><th></th></tr>
-            </thead>
-            <tbody>
-              {items.map((it, i) => (
-                <tr key={i}>
-                  <td>{labelEvento(it.idEvento)}</td>
-                  <td>{it.estadio}</td>
-                  <td>{it.sector}</td>
-                  <td>{it.fila ?? "-"}</td>
-                  <td>{it.asiento ?? "-"}</td>
-                  <td><button className="link" onClick={() => removeItem(i)}>quitar</button></td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr><th>Evento</th><th>Estadio</th><th>Sector</th><th>Fila</th><th>Asiento</th><th></th></tr>
+              </thead>
+              <tbody>
+                {items.map((it, i) => (
+                  <tr key={i}>
+                    <td>{labelEvento(it.idEvento)}</td>
+                    <td>{it.estadio}</td>
+                    <td>{it.sector}</td>
+                    <td>{it.fila ?? "—"}</td>
+                    <td>{it.asiento ?? "—"}</td>
+                    <td><button className="link" onClick={() => removeItem(i)}>quitar</button></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
         {err && <Banner kind="error">{err}</Banner>}
-        {ok && <Banner kind="ok">{ok}</Banner>}
-        <button onClick={comprar} disabled={busy || items.length === 0}>
-          {busy ? "Comprando…" : "Confirmar compra"}
-        </button>
+        <div className="row">
+          <button onClick={comprar} disabled={busy || items.length === 0}>
+            {busy ? "Comprando…" : "Confirmar compra"}
+          </button>
+        </div>
       </Card>
     </div>
   );

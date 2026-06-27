@@ -4,6 +4,7 @@ import type { Rol } from "./lib/types";
 import { Login } from "./features/Login";
 import { Registro } from "./features/Registro";
 import { Usuarios } from "./features/Usuarios";
+import { Funcionarios } from "./features/Funcionarios";
 import { Equipos } from "./features/Equipos";
 import { Estadios } from "./features/Estadios";
 import { Eventos } from "./features/Eventos";
@@ -26,6 +27,7 @@ interface Tab {
 const TABS: Record<Rol, Tab[]> = {
   administrador: [
     { id: "usuarios", label: "Usuarios", render: () => <Usuarios /> },
+    { id: "funcionarios", label: "Funcionarios", render: () => <Funcionarios /> },
     { id: "equipos", label: "Equipos", render: () => <Equipos /> },
     { id: "estadios", label: "Estadios", render: () => <Estadios /> },
     { id: "eventos", label: "Eventos", render: () => <Eventos /> },
@@ -68,12 +70,16 @@ function Dashboard({ rol, nombre, onLogout }: { rol: Rol; nombre: string; onLogo
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">Ticketing</div>
-        <nav className="tabs">
+        <div className="brand">
+          <img className="brand-logo" src="/logo.png" alt="" aria-hidden="true" />
+          Ticketing
+        </div>
+        <nav className="tabs" aria-label="Secciones">
           {tabs.map((t) => (
             <button
               key={t.id}
               className={t.id === active ? "tab active" : "tab"}
+              aria-current={t.id === active ? "page" : undefined}
               onClick={() => setActive(t.id)}
             >
               {t.label}

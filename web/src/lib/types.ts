@@ -9,11 +9,17 @@ export interface UserSession {
   nombre: string;
 }
 
+export interface LoginRequest {
+  documento: string;
+  contrasenia: string;
+}
+
 export interface RegistrarUsuarioRequest {
   documento: string;
   nombre: string;
   apellido: string;
   correo: string;
+  contrasenia: string;
   dirPais?: string | null;
   dirLocalidad?: string | null;
   dirCalle?: string | null;
@@ -63,6 +69,15 @@ export interface Evento {
   paisVisitante: string | null;
   nombreEstadio: string;
   sectoresHabilitados: string[];
+}
+
+export interface SectorDisponibilidad {
+  nombreSector: string;
+  nombreEstadio: string;
+  capacidad: number;
+  vendidas: number;
+  disponibles: number;
+  costoEntrada: number;
 }
 
 export interface Comision {

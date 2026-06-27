@@ -10,6 +10,7 @@ DROP TRIGGER IF EXISTS tr_evento_superpos_ins;
 DROP TRIGGER IF EXISTS tr_evento_superpos_upd;
 DROP TRIGGER IF EXISTS tr_evento_sector_ins;
 DROP TRIGGER IF EXISTS tr_evento_sector_upd;
+DROP TRIGGER IF EXISTS tr_evento_sector_del;
 DROP TRIGGER IF EXISTS tr_entrada_sector_habilitado;
 DROP TRIGGER IF EXISTS tr_max_entradas_por_venta;
 DROP TRIGGER IF EXISTS tr_capacidad_sector;
@@ -36,6 +37,22 @@ BEGIN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Superposición de eventos en el estadio en ese rango de fechas';
     END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM evento e
+        WHERE NEW.fecha_inicio < e.fecha_fin
+          AND NEW.fecha_fin    > e.fecha_inicio
+          AND (
+              (NEW.pais_local IS NOT NULL
+               AND (e.pais_local = NEW.pais_local OR e.pais_visitante = NEW.pais_local))
+              OR
+              (NEW.pais_visitante IS NOT NULL
+               AND (e.pais_local = NEW.pais_visitante OR e.pais_visitante = NEW.pais_visitante))
+          )
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Uno de los equipos ya juega otro partido en ese horario';
+    END IF;
 END //
 
 CREATE TRIGGER tr_evento_superpos_upd
@@ -50,6 +67,23 @@ BEGIN
     ) THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'Superposición de eventos en el estadio en ese rango de fechas';
+    END IF;
+
+    IF EXISTS (
+        SELECT 1 FROM evento e
+        WHERE e.id_evento     <> NEW.id_evento
+          AND NEW.fecha_inicio < e.fecha_fin
+          AND NEW.fecha_fin    > e.fecha_inicio
+          AND (
+              (NEW.pais_local IS NOT NULL
+               AND (e.pais_local = NEW.pais_local OR e.pais_visitante = NEW.pais_local))
+              OR
+              (NEW.pais_visitante IS NOT NULL
+               AND (e.pais_local = NEW.pais_visitante OR e.pais_visitante = NEW.pais_visitante))
+          )
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Uno de los equipos ya juega otro partido en ese horario';
     END IF;
 END //
 
@@ -76,6 +110,24 @@ BEGIN
     IF v_estadio_evento <> NEW.nombre_estadio THEN
         SIGNAL SQLSTATE '45000'
             SET MESSAGE_TEXT = 'El sector no pertenece al estadio del evento';
+    END IF;
+END //
+
+-- ------------------------------------------------------------
+-- 5) No se puede deshabilitar un sector que ya tiene entradas
+--    vendidas para ese evento.
+-- ------------------------------------------------------------
+CREATE TRIGGER tr_evento_sector_del
+    BEFORE DELETE ON evento_sector FOR EACH ROW
+BEGIN
+    IF EXISTS (
+        SELECT 1 FROM entrada
+        WHERE id_evento      = OLD.id_evento
+          AND nombre_estadio = OLD.nombre_estadio
+          AND nombre_sector  = OLD.nombre_sector
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'No se puede deshabilitar un sector que ya tiene entradas vendidas';
     END IF;
 END //
 
@@ -172,9 +224,8 @@ END //
 CREATE TRIGGER tr_transferencia_control
     BEFORE INSERT ON transferencia FOR EACH ROW
 BEGIN
-    DECLARE v_validada    DATETIME(6);
-    DECLARE v_aceptadas   INT;
-    DECLARE v_existentes  INT;
+    DECLARE v_validada   DATETIME(6);
+    DECLARE v_aceptadas  INT;
 
     SELECT hora_validacion INTO v_validada FROM entrada WHERE nro_entrada = NEW.nro_entrada;
     IF v_validada IS NOT NULL THEN
@@ -190,10 +241,8 @@ BEGIN
             SET MESSAGE_TEXT = 'La entrada ya alcanzó el máximo de 3 transferencias';
     END IF;
 
-    SELECT count(*) INTO v_existentes
-    FROM transferencia
-    WHERE nro_entrada = NEW.nro_entrada;
-    SET NEW.contador = v_existentes + 1;
+    -- contador refleja el número de orden entre las aceptadas, nunca supera 3
+    SET NEW.contador = v_aceptadas + 1;
 END //
 
 -- ------------------------------------------------------------

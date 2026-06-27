@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { api } from "../lib/api";
 import type { Qr } from "../lib/types";
-import { Banner, errorMessage } from "../components/ui";
+import { Banner, Loading, errorMessage } from "../components/ui";
 
 /**
  * QR dinámico de una entrada: pide un código fresco al montar y lo rota
@@ -61,12 +61,17 @@ export function EntradaQr({ nroEntrada }: { nroEntrada: number }) {
   }, [qr, nroEntrada]);
 
   if (error) return <Banner kind="error">{error}</Banner>;
-  if (!qr) return <p className="muted">Generando QR…</p>;
+  if (!qr) return <Loading label="Generando QR…" />;
+
+  const pct = Math.max(0, Math.min(100, (restante / qr.expiraEnSegundos) * 100));
 
   return (
     <div className="qr-box">
       <QRCodeSVG value={qr.codigo} size={180} includeMargin />
-      <p className="muted small">
+      <div className="qr-progress" aria-hidden="true">
+        <div className="qr-progress-bar" style={{ width: `${pct}%` }} />
+      </div>
+      <p className="muted small" style={{ color: "#555" }}>
         Se renueva en {restante}s · entrada #{qr.nroEntrada}
       </p>
       <code className="small">{qr.codigo}</code>

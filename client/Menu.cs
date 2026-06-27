@@ -18,6 +18,10 @@ public static class Menu
         {
             new("Verificar conexión (health)", Health),
             new("Listar usuarios generales", ListarUsuarios),
+            new("Listar funcionarios", ListarFuncionarios),
+            new("Crear funcionario", CrearFuncionario),
+            new("Editar funcionario", EditarFuncionario),
+            new("Eliminar funcionario", EliminarFuncionario),
             new("Registrar equipo", RegistrarEquipo),
             new("Listar equipos", ListarEquipos),
             new("Registrar estadio", RegistrarEstadio),
@@ -65,6 +69,81 @@ public static class Menu
         Console.WriteLine($"{"Documento",-12} {"Nombre",-20} {"Correo",-28} Verificado");
         foreach (var u in usuarios)
             Console.WriteLine($"{u.Documento,-12} {$"{u.Nombre} {u.Apellido}",-20} {u.Correo,-28} {(u.EstadoVerificacion ? "sí" : "no")}");
+    }
+
+    private static async Task ListarFuncionarios(ApiClient api)
+    {
+        var funcionarios = await api.GetAsync<List<FuncionarioResponse>>("/usuarios/funcionarios");
+        if (funcionarios.Count == 0)
+        {
+            Console.WriteLine("No hay funcionarios.");
+            return;
+        }
+
+        Console.WriteLine($"{"Documento",-12} {"Legajo",-12} {"Nombre",-24} Correo");
+        foreach (var f in funcionarios)
+            Console.WriteLine($"{f.Documento,-12} {f.NroLegajo,-12} {$"{f.Nombre} {f.Apellido}",-24} {f.Correo}");
+    }
+
+    private static async Task CrearFuncionario(ApiClient api)
+    {
+        Console.WriteLine("\n-- Alta de funcionario --");
+        var documento = Prompt("Documento");
+        var nombre = Prompt("Nombre");
+        var apellido = Prompt("Apellido");
+        var correo = Prompt("Correo");
+        var contrasenia = Prompt("Contraseña (mín. 8 caracteres)");
+        var legajo = Prompt("Nro. de legajo");
+        Console.WriteLine("Dirección (opcional, Enter para omitir):");
+        var pais = PromptOptional("  País");
+        var localidad = PromptOptional("  Localidad");
+        var calle = PromptOptional("  Calle");
+        var numero = PromptOptional("  Número");
+        var cp = PromptOptional("  Código postal");
+
+        await api.PostAsync<object>(
+            "/usuarios/funcionarios",
+            new CrearFuncionarioRequest(documento, nombre, apellido, correo, contrasenia, legajo,
+                pais, localidad, calle, numero, cp));
+        Console.WriteLine($"Funcionario {documento} creado.");
+    }
+
+    private static async Task EditarFuncionario(ApiClient api)
+    {
+        Console.WriteLine("\n-- Modificación de funcionario --");
+        var documento = Prompt("Documento del funcionario a editar");
+        var nombre = Prompt("Nombre");
+        var apellido = Prompt("Apellido");
+        var correo = Prompt("Correo");
+        var legajo = Prompt("Nro. de legajo");
+        Console.WriteLine("Dirección (opcional, Enter para omitir):");
+        var pais = PromptOptional("  País");
+        var localidad = PromptOptional("  Localidad");
+        var calle = PromptOptional("  Calle");
+        var numero = PromptOptional("  Número");
+        var cp = PromptOptional("  Código postal");
+
+        await api.PutAsync(
+            $"/usuarios/funcionarios/{Uri.EscapeDataString(documento)}",
+            new ActualizarFuncionarioRequest(nombre, apellido, correo, legajo,
+                pais, localidad, calle, numero, cp));
+        Console.WriteLine($"Funcionario {documento} actualizado.");
+    }
+
+    private static async Task EliminarFuncionario(ApiClient api)
+    {
+        Console.WriteLine("\n-- Baja de funcionario --");
+        var documento = Prompt("Documento del funcionario a eliminar");
+        Console.Write("¿Confirmar eliminación? (s/n): ");
+        var confirm = Console.ReadLine()?.Trim().ToLowerInvariant();
+        if (confirm != "s")
+        {
+            Console.WriteLine("Operación cancelada.");
+            return;
+        }
+
+        await api.DeleteAsync($"/usuarios/funcionarios/{Uri.EscapeDataString(documento)}");
+        Console.WriteLine($"Funcionario {documento} eliminado.");
     }
 
     private static async Task RegistrarEquipo(ApiClient api)
@@ -383,6 +462,7 @@ public static class Menu
         var nombre = Prompt("Nombre");
         var apellido = Prompt("Apellido");
         var correo = Prompt("Correo");
+        var contrasenia = Prompt("Contraseña (mín. 8 caracteres)");
         Console.WriteLine("Dirección (opcional, Enter para omitir):");
         var pais = PromptOptional("  País");
         var localidad = PromptOptional("  Localidad");
@@ -391,7 +471,7 @@ public static class Menu
         var cp = PromptOptional("  Código postal");
 
         var req = new RegistrarUsuarioRequest(
-            documento, nombre, apellido, correo, pais, localidad, calle, numero, cp);
+            documento, nombre, apellido, correo, contrasenia, pais, localidad, calle, numero, cp);
         var creado = await api.PostAsync<UsuarioRegistradoResponse>("/usuarios/generales", req);
         Console.WriteLine($"Usuario {creado.Documento} registrado. Ya podés iniciar sesión con ese documento.");
     }
@@ -435,11 +515,11 @@ public static class Menu
         }
     }
 
-    private static DateTimeOffset PromptDate(string label)
+    private static DateTime PromptDate(string label)
     {
         while (true)
         {
-            if (DateTimeOffset.TryParse(Prompt(label), out var value))
+            if (DateTime.TryParse(Prompt(label), out var value))
                 return value;
             Console.WriteLine("Fecha inválida. Usá el formato 2026-06-20 18:00.");
         }
