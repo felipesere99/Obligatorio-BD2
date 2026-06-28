@@ -17,6 +17,7 @@ import { Reportes } from "./features/Reportes";
 import { Validar } from "./features/Validar";
 import { MisEntradas } from "./features/MisEntradas";
 import { Transferencias } from "./features/Transferencias";
+import { AdminDashboard } from "./features/AdminDashboard";
 
 interface Tab {
   id: string;
@@ -25,6 +26,9 @@ interface Tab {
 }
 
 type Theme = "dark" | "light";
+
+const ADMIN_HOME_ID = "admin-dashboard";
+const ADMIN_HOME: Tab = { id: ADMIN_HOME_ID, label: "Dashboard", render: () => <AdminDashboard /> };
 
 const TABS: Record<Rol, Tab[]> = {
   administrador: [
@@ -99,15 +103,23 @@ function Dashboard({
   onLogout: () => void;
 }) {
   const tabs = TABS[rol];
-  const [active, setActive] = useState(tabs[0]?.id ?? "");
-  const current = tabs.find((t) => t.id === active);
+  const [active, setActive] = useState(rol === "administrador" ? ADMIN_HOME_ID : tabs[0]?.id ?? "");
+  const current = active === ADMIN_HOME_ID && rol === "administrador"
+    ? ADMIN_HOME
+    : tabs.find((t) => t.id === active);
 
   return (
     <div className="app">
       <header className="topbar">
         <div className="brand">
-          <img className="brand-logo" src="/logo.png" alt="" aria-hidden="true" />
-          Ticketing
+          <button
+            className="brand-button"
+            type="button"
+            onClick={() => setActive(rol === "administrador" ? ADMIN_HOME_ID : tabs[0]?.id ?? "")}
+          >
+            <img className="brand-logo" src="/logo.png" alt="" aria-hidden="true" />
+            Ticketing
+          </button>
         </div>
         <nav className="tabs" aria-label="Secciones">
           {tabs.map((t) => (
