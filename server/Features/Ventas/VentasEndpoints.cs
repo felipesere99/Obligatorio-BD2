@@ -50,7 +50,7 @@ public static class VentasEndpoints
                 await using var ventaCmd = conn.CreateCommand();
                 ventaCmd.CommandText = """
                     INSERT INTO venta(monto_total, estado, doc_comprador, id_comision)
-                    VALUES (@monto, 'pendiente', @comprador, @comision)
+                    VALUES (@monto, 'paga', @comprador, @comision)
                     """;
                 ventaCmd.Parameters.AddWithValue("monto", montoTotal);
                 ventaCmd.Parameters.AddWithValue("comprador", user!.Documento);

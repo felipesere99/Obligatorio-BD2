@@ -2,6 +2,7 @@ import { useState } from "react";
 import { api } from "../lib/api";
 import type { CompraItem, Evento, SectorDisponibilidad, VentaCreada } from "../lib/types";
 import {
+  Badge,
   Banner,
   Card,
   EmptyState,
@@ -178,7 +179,7 @@ export function Comprar() {
           <div className="table-wrap">
             <table>
               <thead>
-                <tr><th>Evento</th><th>Estadio</th><th>Sector</th><th>Fila</th><th>Asiento</th><th></th></tr>
+                <tr><th>Evento</th><th>Estadio</th><th>Sector</th><th>Fila</th><th>Asiento</th><th>Estado</th><th></th></tr>
               </thead>
               <tbody>
                 {items.map((it, i) => (
@@ -188,6 +189,7 @@ export function Comprar() {
                     <td>{it.sector}</td>
                     <td>{it.fila ?? "—"}</td>
                     <td>{it.asiento ?? "—"}</td>
+                    <td><Badge tone="warn">pendiente</Badge></td>
                     <td><button className="link" onClick={() => removeItem(i)}>quitar</button></td>
                   </tr>
                 ))}

@@ -114,6 +114,7 @@ export interface Entrada {
   nombreSector: string;
   fila: string | null;
   asiento: string | null;
+  horaValidacion: string | null;
 }
 
 export interface Asignacion {
@@ -188,6 +189,7 @@ export interface EntradaTenencia {
   nombreSector: string;
   fila: string | null;
   asiento: string | null;
+  horaValidacion: string | null;
 }
 
 export interface ReporteComprador {

@@ -3,6 +3,7 @@ import { api } from "../lib/api";
 import { useSession } from "../lib/session";
 import type { EntradaTenencia, Transferencia } from "../lib/types";
 import {
+  Badge,
   Banner,
   Card,
   EmptyState,
@@ -61,11 +62,11 @@ export function MisEntradas() {
   }
 
   return (
-    <Card title="Mis entradas" subtitle="Entradas a tu nombre. Podés transferirlas a otro usuario.">
+    <Card title="Mis entradas" subtitle="Entradas a tu nombre. Podes transferirlas a otro usuario.">
       {loading && <Skeleton rows={3} />}
       {error && <Banner kind="error">{error}</Banner>}
       {data && data.length === 0 && (
-        <EmptyState icon="🎫">Todavía no tenés entradas.</EmptyState>
+        <EmptyState icon="🎫">Todavia no tenes entradas.</EmptyState>
       )}
       {data && data.length > 0 && (
         <div className="table-wrap">
@@ -77,51 +78,66 @@ export function MisEntradas() {
                 <th>Estadio / Sector</th>
                 <th>Fila</th>
                 <th>Asiento</th>
+                <th>Estado</th>
                 <th></th>
               </tr>
             </thead>
             <tbody>
-              {data.map((e) => (
-                <Fragment key={e.nroEntrada}>
-                  <tr>
-                    <td>#{e.nroEntrada}</td>
-                    <td>#{e.idEvento}</td>
-                    <td>{e.nombreEstadio} / {e.nombreSector}</td>
-                    <td>{e.fila ?? "—"}</td>
-                    <td>{e.asiento ?? "—"}</td>
-                    <td>
-                      <button
-                        className="link"
-                        onClick={() =>
-                          transfEntrada === e.nroEntrada ? cancelTransf() : openTransf(e.nroEntrada)
-                        }
-                      >
-                        {transfEntrada === e.nroEntrada ? "cancelar" : "transferir"}
-                      </button>
-                    </td>
-                  </tr>
-                  {transfEntrada === e.nroEntrada && (
+              {data.map((entrada) => {
+                const validada = Boolean(entrada.horaValidacion);
+                return (
+                  <Fragment key={entrada.nroEntrada}>
                     <tr>
-                      <td colSpan={6}>
-                        <form onSubmit={transferir} className="grid-form">
-                          <Field
-                            label="Documento del receptor"
-                            value={docReceptor}
-                            onChange={(ev) => setDocReceptor(ev.target.value)}
-                            placeholder="ej. 12345678"
-                            required
-                            autoFocus
-                          />
-                          {err && <Banner kind="error">{err}</Banner>}
-                          <button type="submit" disabled={busy || !docReceptor.trim()}>
-                            {busy ? "Enviando…" : "Iniciar transferencia"}
+                      <td>#{entrada.nroEntrada}</td>
+                      <td>#{entrada.idEvento}</td>
+                      <td>{entrada.nombreEstadio} / {entrada.nombreSector}</td>
+                      <td>{entrada.fila ?? "-"}</td>
+                      <td>{entrada.asiento ?? "-"}</td>
+                      <td>
+                        <Badge tone={validada ? "ok" : "warn"}>
+                          {validada ? "validada" : "pendiente"}
+                        </Badge>
+                      </td>
+                      <td>
+                        {validada ? (
+                          <span className="muted small">Consumida</span>
+                        ) : (
+                          <button
+                            className="link"
+                            onClick={() =>
+                              transfEntrada === entrada.nroEntrada
+                                ? cancelTransf()
+                                : openTransf(entrada.nroEntrada)
+                            }
+                          >
+                            {transfEntrada === entrada.nroEntrada ? "cancelar" : "transferir"}
                           </button>
-                        </form>
+                        )}
                       </td>
                     </tr>
-                  )}
-                </Fragment>
-              ))}
+                    {transfEntrada === entrada.nroEntrada && (
+                      <tr>
+                        <td colSpan={7}>
+                          <form onSubmit={transferir} className="grid-form">
+                            <Field
+                              label="Documento del receptor"
+                              value={docReceptor}
+                              onChange={(ev) => setDocReceptor(ev.target.value)}
+                              placeholder="ej. 12345678"
+                              required
+                              autoFocus
+                            />
+                            {err && <Banner kind="error">{err}</Banner>}
+                            <button type="submit" disabled={busy || !docReceptor.trim()}>
+                              {busy ? "Enviando..." : "Iniciar transferencia"}
+                            </button>
+                          </form>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>

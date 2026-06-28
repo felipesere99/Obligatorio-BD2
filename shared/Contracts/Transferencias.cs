@@ -28,4 +28,5 @@ public record EntradaTenenciaResponse(
     string NombreEstadio,
     string NombreSector,
     string? Fila,
-    string? Asiento);
+    string? Asiento,
+    DateTime? HoraValidacion);
