@@ -159,7 +159,8 @@ public static class TransferenciasEndpoints
 
             var entradas = await db.QueryAsync(
                 """
-                SELECT u.nro_entrada, e.id_evento, e.nombre_estadio, e.nombre_sector, e.fila, e.asiento
+                SELECT u.nro_entrada, e.id_evento, e.nombre_estadio, e.nombre_sector,
+                       e.fila, e.asiento, e.hora_validacion
                 FROM usuario_tiene_entradas u
                 JOIN entrada e ON e.nro_entrada = u.nro_entrada
                 WHERE u.documento_usuario = @doc
@@ -168,7 +169,8 @@ public static class TransferenciasEndpoints
                 r => new EntradaTenenciaResponse(
                     r.GetInt32(0), r.GetInt32(1), r.GetString(2), r.GetString(3),
                     r.IsDBNull(4) ? null : r.GetString(4),
-                    r.IsDBNull(5) ? null : r.GetString(5)),
+                    r.IsDBNull(5) ? null : r.GetString(5),
+                    r.IsDBNull(6) ? null : r.GetDateTime(6)),
                 p => p.AddWithValue("doc", doc));
 
             return Results.Ok(entradas);

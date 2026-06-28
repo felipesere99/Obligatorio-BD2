@@ -6,6 +6,7 @@ import { Badge, Banner, Card, EmptyState, Loading, Skeleton, errorMessage, useAs
 import { EntradaQr } from "./EntradaQr";
 
 const ESTADO_TONE: Record<string, BadgeTone> = {
+  paga: "ok",
   pagada: "ok",
   pagado: "ok",
   confirmada: "ok",
