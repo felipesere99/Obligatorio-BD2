@@ -198,3 +198,44 @@ export interface ReporteComprador {
   cantidadEntradas: number;
   totalGastado: number;
 }
+
+export interface AdminDashboard {
+  totales: AdminDashboardTotales;
+  ventasPorEvento: AdminDashboardEventoVentas[];
+  funcionariosPorEvento: AdminDashboardFuncionariosEvento[];
+  dispositivos: AdminDashboardDistribucion;
+  usuarios: AdminDashboardDistribucion;
+}
+
+export interface AdminDashboardTotales {
+  eventosTotales: number;
+  eventosProximos: number;
+  funcionarios: number;
+  funcionariosDisponibles: number;
+  usuarios: number;
+  dispositivosHabilitados: number;
+  entradasVendidas: number;
+  entradasValidadas: number;
+  ingresos: number;
+  totalComisiones: number;
+}
+
+export interface AdminDashboardEventoVentas {
+  idEvento: number;
+  nombreEvento: string;
+  cantidadEntradas: number;
+  totalVentas: number;
+}
+
+export interface AdminDashboardFuncionariosEvento {
+  idEvento: number;
+  nombreEvento: string;
+  cantidadFuncionarios: number;
+}
+
+export interface AdminDashboardDistribucion {
+  etiquetaPrincipal: string;
+  valorPrincipal: number;
+  etiquetaSecundaria: string;
+  valorSecundario: number;
+}

@@ -1,6 +1,7 @@
 using MySqlConnector;
 using Server.Api.Auth;
 using Server.Api.Data;
+using Server.Api.Features.AdminDashboard;
 using Server.Api.Features.Asignaciones;
 using Server.Api.Features.Comisiones;
 using Server.Api.Features.Dispositivos;
@@ -63,6 +64,7 @@ app.MapGet("/health", async (Db db) =>
 
 // ---------- Cimientos: autenticación ----------
 app.MapAuth();
+app.MapAdminDashboard();
 
 // ============================================================
 //  Puntos de extensión — cada persona agrega su grupo de endpoints.
