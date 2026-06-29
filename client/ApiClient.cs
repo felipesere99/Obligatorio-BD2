@@ -37,6 +37,12 @@ public sealed class ApiClient
     public Task<T> PatchAsync<T>(string path, object body) =>
         SendAsync<T>(new HttpRequestMessage(HttpMethod.Patch, path) { Content = JsonContent.Create(body) });
 
+    public Task PatchAsync(string path, object? body = null) =>
+        SendVoidAsync(new HttpRequestMessage(HttpMethod.Patch, path)
+        {
+            Content = body is not null ? JsonContent.Create(body) : null
+        });
+
     public Task PutAsync(string path, object body) =>
         SendVoidAsync(new HttpRequestMessage(HttpMethod.Put, path) { Content = JsonContent.Create(body) });
 

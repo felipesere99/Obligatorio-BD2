@@ -91,6 +91,30 @@ public static class UsuariosEndpoints
             return Results.Ok(rows);
         });
 
+        // PATCH /usuarios/generales/{documento}/verificacion (admin) -> valida el alta de un usuario general.
+        app.MapPatch("/usuarios/generales/{documento}/verificacion", async (string documento, HttpContext ctx, Db db) =>
+        {
+            var (_, error) = ctx.Authorize(Roles.Administrador);
+            if (error is not null) return error;
+
+            var doc = documento.Trim();
+            if (string.IsNullOrWhiteSpace(doc))
+                return Results.BadRequest(new ApiError("El documento es obligatorio."));
+
+            var rowsAffected = await db.ExecuteAsync(
+                """
+                UPDATE usuario_general
+                SET estado_verificacion = TRUE
+                WHERE documento = @doc
+                """,
+                p => p.AddWithValue("doc", doc));
+
+            if (rowsAffected == 0)
+                return Results.NotFound(new ApiError("Usuario general no encontrado."));
+
+            return Results.NoContent();
+        });
+
         // GET /usuarios/funcionarios (admin) -> lista todos los funcionarios.
         app.MapGet("/usuarios/funcionarios", async (HttpContext ctx, Db db) =>
         {

@@ -18,6 +18,7 @@ public static class Menu
         {
             new("Verificar conexión (health)", Health),
             new("Listar usuarios generales", ListarUsuarios),
+            new("Validar usuario general", ValidarUsuarioGeneral),
             new("Listar funcionarios", ListarFuncionarios),
             new("Crear funcionario", CrearFuncionario),
             new("Editar funcionario", EditarFuncionario),
@@ -69,6 +70,14 @@ public static class Menu
         Console.WriteLine($"{"Documento",-12} {"Nombre",-20} {"Correo",-28} Verificado");
         foreach (var u in usuarios)
             Console.WriteLine($"{u.Documento,-12} {$"{u.Nombre} {u.Apellido}",-20} {u.Correo,-28} {(u.EstadoVerificacion ? "sí" : "no")}");
+    }
+
+    private static async Task ValidarUsuarioGeneral(ApiClient api)
+    {
+        Console.WriteLine("\n-- Validar usuario general --");
+        var documento = Prompt("Documento");
+        await api.PatchAsync($"/usuarios/generales/{Uri.EscapeDataString(documento)}/verificacion");
+        Console.WriteLine($"Usuario {documento} verificado.");
     }
 
     private static async Task ListarFuncionarios(ApiClient api)
